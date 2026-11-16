@@ -20,6 +20,7 @@ livrables de chaque sous-phase.
 1. [Sujet](#1-sujet)
 2. [Suivi des livrables](#2-suivi-des-livrables)
 3. [Origine du code](#3-origine-du-code)
+4. [Vérifier avant de pousser : la porte locale](#4-vérifier-avant-de-pousser--la-porte-locale)
 
 ---
 
@@ -157,3 +158,39 @@ références pour certaines sous-phases :
 | orchestrator | Kubernetes (K3s) sous Vagrant | 2 |
 | cloud-design | EKS, Terraform, coûts, supervision | 2, 4 |
 | code-keeper | CI/CD, IaC, sécurité — **socle importé** | 2, 3, 4 |
+
+---
+
+## 4. Vérifier avant de pousser : la porte locale
+
+Les pipelines GitLab ne tournent que dans le GitLab que le projet déploie.
+Avant chaque push, `Scripts/ci-gate.sh` rejoue donc leurs contrôles sur le
+poste, avec les mêmes images, épinglées par empreinte et lues dans les fichiers
+de CI, et ajoute ce qu'aucun job ne vérifie.
+
+```bash
+Scripts/ci-gate.sh && git push
+```
+
+| Étape | Ce qu'elle vérifie | Job de CI repris |
+|---|---|---|
+| `no-silencing-directive` | aucune directive qui fait taire un outil | — |
+| `every-image-pinned` | chaque image tirée par son empreinte | — |
+| `shellcheck` | chaque script shell | — |
+| `hadolint` | chaque recette Docker, images des bases comprises | `dockerfile-lint` |
+| `terraform-validate` | `fmt -check` et `validate` (staging, prod, bootstrap) | `validate` |
+| `tflint` | bonnes pratiques Terraform | `tflint` |
+| `iac-scan` | mauvaises configurations HIGH et CRITICAL (Trivy) | `iac-scan` |
+| `dependency-scan:<app>` | vulnérabilités corrigées et secrets (Trivy) | `dependency-scan` |
+| `lint-and-test:<app>` | ESLint et tests unitaires | `lint`, `test` |
+| `renovate-config` | configuration de Renovate | `validate-config` |
+
+Elle travaille sur une copie des fichiers que Git suit ou suivrait, n'écrit rien
+dans le dépôt (elle le vérifie), va au bout de chaque étape et garde leur journal
+dans `~/.local/state/infrastructure-gate/`. Durée mesurée : une minute environ,
+dont la moitié pour `terraform init`.
+
+Non rejoués : `semgrep-sast` et `sast-gate` (modèle de GitLab), `integration-test`
+(services PostgreSQL et RabbitMQ), et les jobs qui demandent GitLab ou AWS
+(construction des images, `plan`, `apply`, déploiements).
+
