@@ -1,0 +1,80 @@
+# GitLab is reached through its Elastic IP: there is no domain name, so the
+# certificate comes from the project certificate authority (roles/pki).
+gitlab_host: "{{ hostvars[groups['gitlab'][0]]['ansible_host'] }}"
+gitlab_url: "https://{{ gitlab_host }}"
+gitlab_api_url: "{{ gitlab_url }}/api/v4"
+
+# Certificate authority kept on the admin machine; its private key never leaves it.
+pki_dir: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/share/code-keeper/pki"
+pki_ca_cert: "{{ pki_dir }}/ca.crt"
+
+# Pinned versions, upgraded on purpose by changing them here and re-running the playbook.
+gitlab_version: "19.5.1-ce.0"
+gitlab_runner_version: "19.5.0-1"
+
+# Accounts created by the playbook. Passwords are in the vault (vault.yml).
+gitlab_users:
+  - username: clecart
+    name: CLecart
+    email: clecart@example.com
+    admin: true
+  - username: developer
+    name: Developer
+    email: developer@example.com
+    admin: false
+  - username: stakeholder
+    name: Stakeholder
+    email: stakeholder@example.com
+    admin: false
+  # Opens the dependency update merge requests (code-keeper/renovate).
+  - username: renovate-bot
+    name: Renovate Bot
+    email: renovate-bot@example.com
+    admin: false
+
+# Group holding the four repositories, one per application plus the infrastructure.
+gitlab_group:
+  name: code-keeper
+  path: code-keeper
+  description: Microservices of the code-keeper project and their infrastructure
+
+gitlab_projects:
+  - name: inventory-app
+    description: Inventory microservice (movies API, PostgreSQL)
+  - name: billing-app
+    description: Billing microservice (RabbitMQ consumer, PostgreSQL)
+  - name: api-gateway-app
+    description: API gateway (proxy to inventory-app, publishes billing orders)
+  - name: infra
+    description: Terraform infrastructure of the staging and production environments
+  # Maintenance: runs Renovate every working day to keep the dependencies of the
+  # four repositories up to date and to report security advisories.
+  - name: renovate
+    description: Renovate bot, automated dependency updates of the group
+    variables:
+      - key: RENOVATE_TOKEN
+        value: "{{ vault_renovate_token }}"
+        description: Personal access token of renovate-bot (api, read_user, write_repository)
+        masked: true
+    schedule:
+      description: Renovate, every working day
+      cron: "0 7 * * 1-5"
+
+# Roles in the group: 30 Developer, 40 Maintainer, 50 Owner.
+gitlab_group_members:
+  - username: clecart
+    access_level: 50
+  # Approves the production deployments: only Maintainers may run the manual
+  # jobs of the protected main branch.
+  - username: stakeholder
+    access_level: 40
+  # Pushes branches and opens merge requests, never pushes to main.
+  - username: developer
+    access_level: 30
+  # Same rights as a developer: update branches and merge requests only.
+  - username: renovate-bot
+    access_level: 30
+
+# SSH key of the admin account, used by Scripts/repos.sh to push the repositories.
+gitlab_admin_username: clecart
+gitlab_admin_ssh_public_key_file: "{{ lookup('ansible.builtin.env', 'HOME') }}/.ssh/id_ed25519.pub"

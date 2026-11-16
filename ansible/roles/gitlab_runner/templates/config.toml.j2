@@ -1,0 +1,33 @@
+# Managed by Ansible (roles/gitlab_runner/templates/config.toml.j2): local edits are overwritten.
+concurrent = {{ runner_concurrent }}
+check_interval = 0
+shutdown_timeout = 0
+
+[session_server]
+  session_timeout = 1800
+{% for runner in gitlab_runners %}
+
+[[runners]]
+  name = "{{ runner.name }}"
+  url = "{{ gitlab_url }}"
+  token = "{{ runner_tokens[runner.name] }}"
+  limit = {{ runner.limit }}
+  # GitLab's certificate is signed by the project CA.
+  tls-ca-file = "/etc/gitlab-runner/certs/ca.crt"
+  executor = "docker"
+  [runners.docker]
+    image = "{{ runner_default_image }}"
+    privileged = false
+    disable_cache = false
+    # Always fetch the image from its registry: a job cannot plant a fake image
+    # in the local cache for a later job.
+    pull_policy = ["always"]
+    # The CA is mounted in the job containers (the helper image trusts it for git clone).
+{% if runner.docker_socket %}
+    # Docker socket of the machine: image builds of the protected branches only.
+    volumes = ["/cache", "/etc/gitlab-runner/certs/ca.crt:/etc/gitlab-runner/certs/ca.crt:ro", "/var/run/docker.sock:/var/run/docker.sock"]
+{% else %}
+    volumes = ["/cache", "/etc/gitlab-runner/certs/ca.crt:/etc/gitlab-runner/certs/ca.crt:ro"]
+{% endif %}
+    shm_size = 0
+{% endfor %}

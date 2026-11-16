@@ -1,0 +1,31 @@
+# billing-app
+
+Microservice de facturation du projet code-keeper : il lit les commandes dans la file RabbitMQ et les enregistre dans PostgreSQL.
+
+| | |
+|---|---|
+| Langage | Node.js 24, Express 5, amqplib |
+| Port | `8080` |
+| Santé | `GET /health` |
+| Tests | `npm ci && npm test` (test runner intégré de Node) |
+| Image | `code-keeper/billing-app` dans Amazon ECR |
+
+Le pipeline lance aussi `npm run lint` (job `lint`, règles recommandées d'ESLint) et `npm run test:integration` (job `integration-test`) : l'application démarre contre une vraie base PostgreSQL 17 et une vraie file RabbitMQ 4 (services GitLab), et les tests vérifient qu'une commande publiée dans la file est enregistrée en base et qu'un message invalide ne l'est jamais. Pour les lancer en local contre ses propres conteneurs, les variables à définir sont indiquées en tête de `integration/billing.int.js`.
+
+## Configuration (variables d'environnement)
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `PORT` | `8080` | Port HTTP |
+| `DB_HOST` | `billing-database` | Hôte PostgreSQL |
+| `DB_PORT` | `5432` | Port PostgreSQL |
+| `DB_NAME` | `orders` | Base de données |
+| `DB_USER` | `billing_user` | Utilisateur |
+| `DB_PASSWORD` | aucun, **obligatoire** | Mot de passe PostgreSQL |
+| `RABBITMQ_HOST` | `rabbitmq` | Hôte RabbitMQ |
+| `RABBITMQ_PORT` | `5672` | Port RabbitMQ |
+| `RABBITMQ_USER` | `rabbit_user` | Utilisateur RabbitMQ |
+| `RABBITMQ_PASSWORD` | aucun, **obligatoire** | Mot de passe RabbitMQ |
+| `RABBITMQ_QUEUE` | `billing_queue` | File lue |
+
+Les mots de passe sont fournis par des secrets Kubernetes. Ce dépôt est publié depuis le dossier `repos/billing-app/` du dépôt code-keeper.

@@ -1,0 +1,27 @@
+{
+  "name": "billing-app",
+  "version": "1.0.0",
+  "description": "Billing microservice: consumes order messages from RabbitMQ and stores them in PostgreSQL",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test",
+    "test:integration": "node --test integration/*.int.js",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "express": "^5.2.1",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.12.0",
+    "globals": "17.13.0"
+  }
+}

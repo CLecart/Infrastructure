@@ -1,0 +1,50 @@
+# Settings applied to every project of the group (PUT /projects/:id).
+gitlab_project_settings:
+  visibility: private
+  # A merge request is merged only after a green pipeline and resolved threads.
+  only_allow_merge_if_pipeline_succeeds: true
+  only_allow_merge_if_all_discussions_are_resolved: true
+  remove_source_branch_after_merge: true
+  auto_devops_enabled: false
+  # Job logs are for project members only.
+  public_jobs: false
+  # A deployment job of an older pipeline never runs after a newer one.
+  ci_forward_deployment_enabled: true
+  # Only Maintainers may pass variables to a pipeline they start.
+  ci_pipeline_variables_minimum_override_role: maintainer
+  # Images go to Amazon ECR, there are no packages.
+  container_registry_access_level: disabled
+  package_registry_access_level: disabled
+
+# Flags of every CI/CD variable set by this role (tasks/ci_variable.yml).
+gitlab_ci_variable_flags:
+  protected: true
+  masked: false
+  raw: true
+  variable_type: env_var
+
+# Variables shared by the four projects (values from the bootstrap outputs).
+gitlab_group_variables:
+  - key: AWS_REGION
+    value: "{{ aws_region }}"
+    description: AWS Region of the environments
+  - key: ECR_REGISTRY
+    value: "{{ ecr_registry }}"
+    description: Amazon ECR registry of the images
+  - key: TF_STATE_BUCKET
+    value: "{{ tf_state_bucket }}"
+    description: S3 bucket of the Terraform states (infra)
+  # Read by Terraform as var.eks_api_allowed_cidrs and var.admin_principal_arns.
+  - key: TF_VAR_eks_api_allowed_cidrs
+    value: "{{ eks_api_allowed_cidrs | to_json }}"
+    description: Ranges allowed on the EKS API (admin machine, runner)
+  - key: TF_VAR_admin_principal_arns
+    value: "{{ [admin_principal_arn] | to_json }}"
+    description: IAM identities with cluster admin rights (admin machine)
+
+# Protection of main: Maintainers push and merge, nobody force-pushes.
+gitlab_main_protection:
+  name: main
+  push_access_level: 40
+  merge_access_level: 40
+  allow_force_push: false
