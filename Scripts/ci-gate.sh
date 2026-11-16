@@ -2,7 +2,7 @@
 # Local gate, run before every push: replays the checks of the GitLab CI jobs
 # with the images the CI files pin, plus the guards that no job holds
 # (shellcheck on every script, hadolint on every recipe, no silencing
-# directive, every image pinned by digest). It checks a copy of the files Git
+# directive, every image pinned by digest, a valid compose.yaml). It checks a copy of the files Git
 # tracks or would track, never writes in the repository, and keeps the log of
 # each step under ~/.local/state/infrastructure-gate/.
 #   Scripts/ci-gate.sh
@@ -148,6 +148,12 @@ lint_and_test() {
     --entrypoint sh "$NODE_IMAGE" -c 'npm ci --no-audit --no-fund && npm run lint && npm test'
 }
 
+# The model of .env, as .env itself is never copied.
+compose_config() {
+  docker compose --project-directory "$WORK/tree" -f "$WORK/tree/compose.yaml" \
+    --env-file "$WORK/tree/.env.example" config --quiet
+}
+
 renovate_config() {
   "${RUN[@]}" -v "$WORK/tree/repos/renovate:/work:ro" -w /work --entrypoint renovate-config-validator \
     "$RENOVATE_IMAGE" --strict renovate.json default.json
@@ -184,6 +190,7 @@ for app in "${APPS[@]}"; do
   step "lint-and-test:$app" lint_and_test "$app"
 done
 step renovate-config renovate_config
+step compose-config compose_config
 
 if [[ "$(repo_state)" != "$before" ]]; then
   printf 'KO  %-34s\n' "nothing-written-in-the-repository"
