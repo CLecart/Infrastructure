@@ -26,7 +26,7 @@ workflow:
 # "full" image (2 GB instead of 10 on the runner disk): the validator is in both.
 validate-config:
   image:
-    name: ghcr.io/renovatebot/renovate:44.176.2
+    name: ghcr.io/renovatebot/renovate:44.176.2@sha256:1ffc71775d95bd2233bf5a867744c5a92d845b5928dee93f5bb22ced956e4e38
     pull_policy: always
   script:
     - renovate-config-validator --strict renovate.json default.json
@@ -52,7 +52,7 @@ renovate:
   # default image downloads them from GitHub, whose API refuses anonymous
   # clients after a few calls: the lock files were then left behind.
   image:
-    name: ghcr.io/renovatebot/renovate:44.176.2-full
+    name: ghcr.io/renovatebot/renovate:44.176.2-full@sha256:d71868289bdaa0f46770ef2fd81dff6d6d296328a6f0895bcbdab42b38d0728f
     pull_policy: always
   cache:
     key: renovate-repository-cache

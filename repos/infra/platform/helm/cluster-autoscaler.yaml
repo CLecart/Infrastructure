@@ -13,7 +13,7 @@ autoDiscovery:
 # The autoscaler minor version should match the Kubernetes one (1.36); the chart
 # still defaults to v1.35.0.
 image:
-  tag: v1.36.1
+  tag: v1.36.1@sha256:461388d03eb5b55db58941ee7a81d9a619dd15302b01cbab9f5a9946715994b4
 
 rbac:
   serviceAccount:

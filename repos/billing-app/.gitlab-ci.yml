@@ -21,7 +21,7 @@ variables:
   APP_NAME: billing-app
   K8S_WORKLOAD: statefulset/billing-app
   IMAGE: $ECR_REGISTRY/movies/$APP_NAME
-  TRIVY_IMAGE: public.ecr.aws/aquasecurity/trivy:0.76.1
+  TRIVY_IMAGE: public.ecr.aws/aquasecurity/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
   # Runs the SAST analyzers in merge request pipelines too (the template only
   # adds them to branch pipelines otherwise, and sast-gate needs semgrep-sast).
   AST_ENABLE_MR_PIPELINES: "true"
@@ -50,7 +50,7 @@ include:
   - template: Jobs/SAST.gitlab-ci.yml
 
 default:
-  image: public.ecr.aws/docker/library/node:24-alpine
+  image: public.ecr.aws/docker/library/node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
 
 .on-main: &on-main
   if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH && $CI_COMMIT_REF_PROTECTED == "true"
@@ -98,11 +98,11 @@ test:
 # credentials unique to the job. No AWS access.
 integration-test:
   stage: test
-  image: public.ecr.aws/docker/library/node:24-alpine
+  image: public.ecr.aws/docker/library/node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
   services:
-    - name: public.ecr.aws/docker/library/postgres:17-alpine3.23
+    - name: public.ecr.aws/docker/library/postgres:17-alpine3.23@sha256:318b8c3c90e13b6fc3a1e57b9bd260965ad578d46401b1b3cfdcc4e17ac81a3f
       alias: postgres
-    - name: public.ecr.aws/docker/library/rabbitmq:4.2-alpine
+    - name: public.ecr.aws/docker/library/rabbitmq:4.2-alpine@sha256:cd4f5c5bb4ffe530dba84770a8d139b8518470cdd385fec9cf014ebfff6bb009
       alias: rabbitmq
   variables:
     POSTGRES_PASSWORD: "ci-$CI_PIPELINE_ID-$CI_JOB_ID"
@@ -118,7 +118,7 @@ semgrep-sast:
 # Fails when the SAST report holds a High or Critical finding.
 sast-gate:
   stage: scan
-  image: public.ecr.aws/docker/library/alpine:3.24
+  image: public.ecr.aws/docker/library/alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
   needs:
     - job: semgrep-sast
       artifacts: true
@@ -142,7 +142,7 @@ dependency-scan:
 dockerfile-lint:
   stage: scan
   needs: []
-  image: ghcr.io/hadolint/hadolint:v2.15.1-alpine
+  image: ghcr.io/hadolint/hadolint:v2.15.1-alpine@sha256:a1d49ae1a4e83c1dbad26b8c1ad7588c8bd1e04f4866b34ad3cac50335198552
   script:
     - hadolint Dockerfile
 
@@ -150,7 +150,7 @@ dockerfile-lint:
 # the versions pinned in package.json (devDependencies).
 lint:
   stage: scan
-  image: public.ecr.aws/docker/library/node:24-alpine
+  image: public.ecr.aws/docker/library/node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
   script:
     - npm ci
     - npm run lint
@@ -162,7 +162,7 @@ lint:
 # repositories are immutable: a tag already pushed is reused, never replaced.
 containerization:
   stage: containerization
-  image: public.ecr.aws/docker/library/docker:29.9.2-cli
+  image: public.ecr.aws/docker/library/docker:29.9.2-cli@sha256:5e6baf67325a79f64ed3bed6863954d5e05d0f3d4e57cbdb14809346814bbfdb
   tags: [docker-build]
   extends: .aws
   # Every check of the build, test and scan stages must pass: a needs list
@@ -195,7 +195,7 @@ containerization:
 # the new pods must be ready before the old ones stop (strategy and probes of
 # k8s/), and the job waits for the end of the rollout.
 .deploy:
-  image: public.ecr.aws/docker/library/alpine:3.24
+  image: public.ecr.aws/docker/library/alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
   extends: .aws
   before_script:
     - !reference [.aws, before_script]
@@ -234,7 +234,7 @@ deploy-staging:
 # to merge into main, so only the Maintainers (stakeholder, clecart) can approve.
 approve-production:
   stage: approval
-  image: public.ecr.aws/docker/library/alpine:3.24
+  image: public.ecr.aws/docker/library/alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
   needs: [deploy-staging]
   script:
     - echo "Production approved by $GITLAB_USER_LOGIN"

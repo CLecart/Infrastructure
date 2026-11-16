@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": "Shared Renovate settings of the movies group, used by every repository through the preset local>movies/renovate",
-  "extends": ["config:recommended", ":timezone(Europe/Paris)"],
+  "extends": ["config:recommended", "docker:pinDigests", ":timezone(Europe/Paris)"],
   "dependencyDashboard": true,
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
@@ -15,7 +15,7 @@
       "customType": "regex",
       "description": "Trivy image given through a variable (TRIVY_IMAGE) in the CI files and scripts",
       "managerFilePatterns": ["/(^|/)\\.gitlab-ci\\.yml$/", "/(^|/)scripts/[^/]+\\.sh$/"],
-      "matchStrings": ["(?<depName>public\\.ecr\\.aws/aquasecurity/trivy):(?<currentValue>[0-9][^\\s\"']*)"],
+      "matchStrings": ["(?<depName>public\\.ecr\\.aws/aquasecurity/trivy):(?<currentValue>[0-9][^\\s\"'@]*)(?:@(?<currentDigest>sha256:[a-f0-9]{64}))?"],
       "datasourceTemplate": "docker"
     },
     {

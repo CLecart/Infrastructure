@@ -1,12 +1,12 @@
 # ---- Stage 1: install production dependencies only ----
-FROM alpine:3.23 AS deps
+FROM alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2 AS deps
 RUN apk add --no-cache nodejs npm
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # ---- Stage 2: minimal runtime image (no npm, non-root user) ----
-FROM alpine:3.23
+FROM alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2
 LABEL org.opencontainers.image.title="api-gateway-app" \
       org.opencontainers.image.description="API gateway: proxies /api/movies to inventory-app and publishes /api/billing orders to RabbitMQ" \
       org.opencontainers.image.authors="clecart"

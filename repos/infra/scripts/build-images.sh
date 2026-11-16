@@ -16,7 +16,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 IMAGES=(inventory-database billing-database rabbitmq-server)
-TRIVY_IMAGE="public.ecr.aws/aquasecurity/trivy:0.76.1"
+TRIVY_IMAGE="public.ecr.aws/aquasecurity/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c"
 
 registry="${ECR_REGISTRY:?ECR_REGISTRY must be set}"
 region="${AWS_REGION:-eu-west-3}"

@@ -90,7 +90,8 @@ compte-rendu d'origine.
 10. **Reproductibilité :**
     L'infrastructure est du code : elle se construit, se détruit et se reconstruit à l'identique, sans un clic dans une console.
     - Toute ressource naît du code. Une action manuelle inévitable (création du compte, première clé) se documente pas à pas, et elle seule.
-    - Chaque version se fige à l'exact : Terraform, fournisseurs et modules (`.terraform.lock.hcl` commité), charts Helm, images, outils de la CI. Tenue pour Terraform par le job `tflint`. [CIBLE] Les images se tirent encore par étiquette : elles s'épinglent par empreinte (`image:étiquette@sha256:…`).
+    - Chaque version se fige à l'exact : Terraform, fournisseurs et modules (`.terraform.lock.hcl` commité), charts Helm, images, outils de la CI. Tenue pour Terraform par le job `tflint`.
+    - Une image se tire par l'empreinte de son index multi-architecture, l'étiquette gardée devant pour la lecture (`image:étiquette@sha256:…`) : recettes, CI, scripts, Ansible, valeurs Helm. Renovate tient les empreintes à jour (`docker:pinDigests`, `repos/renovate/default.json`), et propose d'épingler une image qui ne l'est pas. Un exemple de commande dans un README garde l'étiquette seule : Renovate ne le lit pas. [CIBLE] Aucune garde ne refuse une image nouvelle sans empreinte. [CIBLE] Les images que tirent les charts Helm eux-mêmes (kube-prometheus-stack, fluent-bit) ne sont figées que par la version du chart.
     - Un `destroy` laisse le compte propre : aucune ressource orpheline, facturée ou non. Il se vérifie après coup, par l'inventaire (`Scripts/inventory.sh`).
     - Parité : une seule version de chaque outil entre le poste, la CI et les images, écrite une fois dans la ligne **Pile** du `README.md`.
 

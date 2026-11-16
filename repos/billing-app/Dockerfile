@@ -1,5 +1,5 @@
 # ---- Stage 1: install production dependencies only ----
-FROM alpine:3.23 AS deps
+FROM alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2 AS deps
 
 RUN apk add --no-cache nodejs npm
 
@@ -8,7 +8,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # ---- Stage 2: minimal runtime image (no npm, non-root, tini as PID 1) ----
-FROM alpine:3.23
+FROM alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2
 
 LABEL org.opencontainers.image.title="billing-app" \
       org.opencontainers.image.description="Billing microservice: consumes order messages from RabbitMQ and stores them in PostgreSQL" \

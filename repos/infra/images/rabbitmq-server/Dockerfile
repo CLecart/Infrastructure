@@ -1,7 +1,7 @@
 # RabbitMQ 4 message broker built from the Alpine package (no pre-built rabbitmq image).
 # The broker configuration (including credentials) is generated at container start by
 # docker-entrypoint.sh, so nothing secret is ever stored in the image layers.
-FROM alpine:3.23
+FROM alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2
 
 LABEL org.opencontainers.image.title="rabbitmq" \
       org.opencontainers.image.description="RabbitMQ message broker (AMQP 0-9-1) carrying billing messages from api-gateway-app to billing-app" \

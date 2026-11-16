@@ -21,4 +21,4 @@ gitlab_runners:
 
 # Jobs at a time on the 4 GiB machine, all runners together.
 runner_concurrent: 2
-runner_default_image: public.ecr.aws/docker/library/alpine:3.23
+runner_default_image: public.ecr.aws/docker/library/alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2

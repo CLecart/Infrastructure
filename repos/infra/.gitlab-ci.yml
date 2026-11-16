@@ -51,7 +51,7 @@ variables:
 
 default:
   image:
-    name: public.ecr.aws/hashicorp/terraform:1.16.6
+    name: public.ecr.aws/hashicorp/terraform:1.16.6@sha256:bfffc1ded5fbf0a17beaaf22eb4793980abdb19d0761ff6a3a0efb2ab4d9b316
     entrypoint: [""]
 
 # ---- building blocks ---------------------------------------------------------
@@ -100,7 +100,7 @@ default:
 # not in ECR yet; their tags go to the deployment jobs (dotenv report).
 build-platform-images:
   stage: images
-  image: public.ecr.aws/docker/library/docker:29.9.2-cli
+  image: public.ecr.aws/docker/library/docker:29.9.2-cli@sha256:5e6baf67325a79f64ed3bed6863954d5e05d0f3d4e57cbdb14809346814bbfdb
   tags: [docker-build]
   extends: .aws
   before_script:
@@ -164,7 +164,7 @@ validate:
 tflint:
   stage: validate
   image:
-    name: ghcr.io/terraform-linters/tflint:v0.64.0
+    name: ghcr.io/terraform-linters/tflint:v0.64.0@sha256:1c595f42d794c32c45a6ea8b58655fd66433d4ca3b1bc631c574a48d120bd19f
     entrypoint: [""]
   script:
     # Logs the ruleset in use (terraform, bundled): the lint prints nothing when
@@ -187,7 +187,7 @@ iac-scan:
   variables:
     # A variable, as in the application pipelines: the Renovate custom manager
     # updates it.
-    TRIVY_IMAGE: public.ecr.aws/aquasecurity/trivy:0.76.1
+    TRIVY_IMAGE: public.ecr.aws/aquasecurity/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
   image:
     name: $TRIVY_IMAGE
     entrypoint: [""]
@@ -333,7 +333,7 @@ destroy-staging:
 # to merge into main, so only the Maintainers (stakeholder, clecart) can approve.
 approve-production:
   stage: approval
-  image: public.ecr.aws/docker/library/alpine:3.23
+  image: public.ecr.aws/docker/library/alpine:3.23@sha256:469c9ea410b9215eaee7976ba6c0639039b444be8e5d638f7abbada189971eb2
   script:
     - echo "Production approved by $GITLAB_USER_LOGIN (DESTROY=$DESTROY)"
   needs:
