@@ -13,7 +13,7 @@ metadata:
   name: inventory-db
   labels:
     app: inventory-db
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   clusterIP: None
   selector:
@@ -29,7 +29,7 @@ metadata:
   name: inventory-db
   labels:
     app: inventory-db
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   serviceName: inventory-db
   replicas: 1
@@ -40,7 +40,7 @@ spec:
     metadata:
       labels:
         app: inventory-db
-        app.kubernetes.io/part-of: code-keeper
+        app.kubernetes.io/part-of: movies
     spec:
       # None of the containers calls the Kubernetes API.
       automountServiceAccountToken: false
@@ -138,7 +138,7 @@ spec:
         name: data
         labels:
           app: inventory-db
-          app.kubernetes.io/part-of: code-keeper
+          app.kubernetes.io/part-of: movies
       spec:
         storageClassName: gp3-encrypted
         accessModes:

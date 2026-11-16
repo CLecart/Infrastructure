@@ -16,7 +16,7 @@ metadata:
   name: api-gateway
   labels:
     app: api-gateway
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   type: NodePort
   selector:
@@ -33,7 +33,7 @@ metadata:
   name: api-gateway
   labels:
     app: api-gateway
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   # No "replicas" field: the HorizontalPodAutoscaler below owns the replica
   # count, and re-applying this file must not reset it.
@@ -50,7 +50,7 @@ spec:
     metadata:
       labels:
         app: api-gateway
-        app.kubernetes.io/part-of: code-keeper
+        app.kubernetes.io/part-of: movies
     spec:
       # None of the containers calls the Kubernetes API.
       automountServiceAccountToken: false
@@ -143,7 +143,7 @@ metadata:
   name: api-gateway
   labels:
     app: api-gateway
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -175,7 +175,7 @@ metadata:
   name: api-gateway
   labels:
     app: api-gateway
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   maxUnavailable: 1
   # A replica that is not ready is evicted anyway: it must not hold up the

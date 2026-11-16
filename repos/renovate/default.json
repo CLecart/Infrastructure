@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Shared Renovate settings of the code-keeper group, used by every repository through the preset local>code-keeper/renovate",
+  "description": "Shared Renovate settings of the movies group, used by every repository through the preset local>movies/renovate",
   "extends": ["config:recommended", ":timezone(Europe/Paris)"],
   "dependencyDashboard": true,
   "osvVulnerabilityAlerts": true,

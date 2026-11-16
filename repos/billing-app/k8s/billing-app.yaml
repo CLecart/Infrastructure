@@ -14,7 +14,7 @@ metadata:
   name: billing-app
   labels:
     app: billing-app
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   clusterIP: None
   selector:
@@ -30,7 +30,7 @@ metadata:
   name: billing-app
   labels:
     app: billing-app
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   serviceName: billing-app
   replicas: 1
@@ -41,7 +41,7 @@ spec:
     metadata:
       labels:
         app: billing-app
-        app.kubernetes.io/part-of: code-keeper
+        app.kubernetes.io/part-of: movies
     spec:
       # None of the containers calls the Kubernetes API.
       automountServiceAccountToken: false

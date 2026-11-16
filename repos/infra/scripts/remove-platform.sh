@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # First half of the deletion of an environment, before `terraform destroy`:
-# deletes the code-keeper namespace while the cluster still runs, so that its
+# deletes the movies namespace while the cluster still runs, so that its
 # volume claims delete their EBS volumes (StorageClass reclaimPolicy Delete).
 # Destroying the cluster alone would leave those volumes behind, still billed.
 #
@@ -16,11 +16,11 @@
 # Usage: scripts/remove-platform.sh staging|prod
 set -euo pipefail
 
-NAMESPACE="code-keeper"
+NAMESPACE="movies"
 env="${1:-}"
 [[ "$env" == staging || "$env" == prod ]] || { echo "usage: $0 staging|prod" >&2; exit 2; }
 region="${AWS_REGION:-eu-west-3}"
-cluster="code-keeper-$env"
+cluster="movies-$env"
 err="$(mktemp)"
 trap 'rm -f "$err"' EXIT
 

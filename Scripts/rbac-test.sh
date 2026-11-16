@@ -3,8 +3,8 @@
 # nothing else in Kubernetes (infra repository: platform/rbac.yaml and the
 # access entries of terraform/modules/environment/eks.tf):
 #
-#   1. AWS: the access entry of the CI role code-keeper-ci-<application> holds
-#      the group code-keeper-deploy-<application> and no EKS access policy, so
+#   1. AWS: the access entry of the CI role movies-ci-<application> holds
+#      the group movies-deploy-<application> and no EKS access policy, so
 #      the role has the rights of that group and nothing more
 #   2. kubectl auth can-i as a member of that group (impersonation):
 #      allowed  what its deploy job does to its own workload, Service,
@@ -23,7 +23,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-NAMESPACE="code-keeper"
+NAMESPACE="movies"
 APPS=(inventory-app billing-app api-gateway-app)
 # Workload (K8S_WORKLOAD of its .gitlab-ci.yml) and Service of each application.
 declare -A WORKLOAD=([inventory-app]=deployment/inventory-app [billing-app]=statefulset/billing-app [api-gateway-app]=deployment/api-gateway)
@@ -32,7 +32,7 @@ declare -A SERVICE=([inventory-app]=inventory-app [billing-app]=billing-app [api
 env="${1:-}"
 [[ "$env" == staging || "$env" == prod ]] || { echo "usage: $0 staging|prod" >&2; exit 2; }
 region="${AWS_REGION:-eu-west-3}"
-cluster="code-keeper-$env"
+cluster="movies-$env"
 aws eks update-kubeconfig --region "$region" --name "$cluster" --alias "$cluster" >/dev/null
 account="$(aws sts get-caller-identity --query Account --output text)"
 
@@ -88,10 +88,10 @@ apply_dry_run() {
 
 echo "== Kubernetes rights of the application pipelines in $cluster"
 for app in "${APPS[@]}"; do
-  group="code-keeper-deploy-$app"
+  group="movies-deploy-$app"
   workload="${WORKLOAD[$app]}"
   name="${workload#*/}"
-  role="code-keeper-ci-$app"
+  role="movies-ci-$app"
   echo
   echo "== $app (group $group)"
 

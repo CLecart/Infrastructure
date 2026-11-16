@@ -1,6 +1,6 @@
 # api-gateway-app
 
-Passerelle d'API du projet code-keeper : elle transmet `/api/movies` à inventory-app et publie les commandes de `/api/billing` dans la file RabbitMQ.
+Passerelle d'API du projet Infrastructure : elle transmet `/api/movies` à inventory-app et publie les commandes de `/api/billing` dans la file RabbitMQ.
 
 | | |
 |---|---|
@@ -8,7 +8,7 @@ Passerelle d'API du projet code-keeper : elle transmet `/api/movies` à inventor
 | Port | `3000` |
 | Santé | `GET /health` |
 | Tests | `npm ci && npm test` (test runner intégré de Node) |
-| Image | `code-keeper/api-gateway-app` dans Amazon ECR |
+| Image | `movies/api-gateway-app` dans Amazon ECR |
 
 En CI, le job `lint` (étape `scan`) applique les règles recommandées d'ESLint (`npm run lint`), et le job `integration-test` (étape `test`) démarre la passerelle réelle face à un vrai RabbitMQ (service GitLab) et à une inventory-app simulée (`npm run test:integration`, fichiers `integration/*.int.js`). En local, ces tests visent un RabbitMQ de test grâce à `INTEGRATION_RABBITMQ_HOST`, `INTEGRATION_RABBITMQ_PORT`, `RABBITMQ_DEFAULT_USER` et `RABBITMQ_DEFAULT_PASS`.
 
@@ -25,4 +25,4 @@ En CI, le job `lint` (étape `scan`) applique les règles recommandées d'ESLint
 | `RABBITMQ_QUEUE` | `billing_queue` | File où sont publiées les commandes |
 | `LOG_DIR` | `/var/logs/api-gateway` | Dossier des journaux d'accès |
 
-Les identifiants RabbitMQ sont fournis par un secret Kubernetes. Ce dépôt est publié depuis le dossier `repos/api-gateway-app/` du dépôt code-keeper.
+Les identifiants RabbitMQ sont fournis par un secret Kubernetes. Ce dépôt est publié depuis le dossier `repos/api-gateway-app/` du dépôt Infrastructure.

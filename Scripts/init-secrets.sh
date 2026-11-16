@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PASS_FILE="$HOME/.config/code-keeper/vault-pass"
+PASS_FILE="$HOME/.config/movies/vault-pass"
 VAULT_FILE="$ROOT/ansible/group_vars/all/vault.yml"
 
 umask 077

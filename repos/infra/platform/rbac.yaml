@@ -1,8 +1,8 @@
 # Kubernetes rights of the application pipelines (deploy-staging and
 # deploy-production jobs of inventory-app, billing-app and api-gateway-app).
 #
-# EKS gives the CI role of each application (code-keeper-ci-<application>) no
-# access policy, only the group code-keeper-deploy-<application>
+# EKS gives the CI role of each application (movies-ci-<application>) no
+# access policy, only the group movies-deploy-<application>
 # (terraform/modules/environment/eks.tf). Each group is bound below to a Role
 # that allows what its deploy job runs, on the objects of its own k8s/
 # manifests:
@@ -16,14 +16,14 @@
 # verb is limited to its own names. Nothing else: no access to the Secrets, no
 # change to the databases, RabbitMQ, another application, the quota or the
 # network policies, no deletion, no Role or RoleBinding. Scripts/rbac-test.sh
-# (code-keeper repository) checks it against the cluster.
+# (movies repository) checks it against the cluster.
 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: deploy-inventory-app
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 rules:
   - apiGroups: [""]
     resources: ["services"]
@@ -64,10 +64,10 @@ kind: RoleBinding
 metadata:
   name: deploy-inventory-app
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 subjects:
   - kind: Group
-    name: code-keeper-deploy-inventory-app
+    name: movies-deploy-inventory-app
     apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: Role
@@ -81,7 +81,7 @@ kind: Role
 metadata:
   name: deploy-billing-app
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 rules:
   - apiGroups: [""]
     resources: ["services"]
@@ -106,10 +106,10 @@ kind: RoleBinding
 metadata:
   name: deploy-billing-app
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 subjects:
   - kind: Group
-    name: code-keeper-deploy-billing-app
+    name: movies-deploy-billing-app
     apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: Role
@@ -122,7 +122,7 @@ kind: Role
 metadata:
   name: deploy-api-gateway-app
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 rules:
   - apiGroups: [""]
     resources: ["services"]
@@ -161,10 +161,10 @@ kind: RoleBinding
 metadata:
   name: deploy-api-gateway-app
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 subjects:
   - kind: Group
-    name: code-keeper-deploy-api-gateway-app
+    name: movies-deploy-api-gateway-app
     apiGroup: rbac.authorization.k8s.io
 roleRef:
   kind: Role

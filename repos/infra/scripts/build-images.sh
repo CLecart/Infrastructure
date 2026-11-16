@@ -29,9 +29,9 @@ for name in "${IMAGES[@]}"; do
   tag="$("$ROOT/scripts/image-tag.sh" "$name")"
   var="${name^^}_TAG"
   echo "${var//-/_}=$tag" >>"$dotenv"
-  ref="$registry/code-keeper/$name:$tag"
+  ref="$registry/movies/$name:$tag"
 
-  if aws ecr describe-images --region "$region" --repository-name "code-keeper/$name" \
+  if aws ecr describe-images --region "$region" --repository-name "movies/$name" \
     --image-ids imageTag="$tag" >/dev/null 2>&1; then
     echo "== $name:$tag already in ECR"
     continue

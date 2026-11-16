@@ -10,7 +10,7 @@ metadata:
   name: inventory-app
   labels:
     app: inventory-app
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   type: ClusterIP
   selector:
@@ -26,7 +26,7 @@ metadata:
   name: inventory-app
   labels:
     app: inventory-app
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   # No "replicas" field: the HorizontalPodAutoscaler below owns the replica
   # count, and re-applying this file must not reset it.
@@ -43,7 +43,7 @@ spec:
     metadata:
       labels:
         app: inventory-app
-        app.kubernetes.io/part-of: code-keeper
+        app.kubernetes.io/part-of: movies
     spec:
       # None of the containers calls the Kubernetes API.
       automountServiceAccountToken: false
@@ -134,7 +134,7 @@ metadata:
   name: inventory-app
   labels:
     app: inventory-app
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
@@ -166,7 +166,7 @@ metadata:
   name: inventory-app
   labels:
     app: inventory-app
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   maxUnavailable: 1
   # A replica that is not ready (database unreachable) is evicted anyway: it

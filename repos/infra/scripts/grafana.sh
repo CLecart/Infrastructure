@@ -13,7 +13,7 @@ set -euo pipefail
 env="${1:-}"
 [[ "$env" == staging || "$env" == prod ]] || { echo "usage: $0 staging|prod" >&2; exit 2; }
 PORT="${GRAFANA_PORT:-3001}"
-cluster="code-keeper-$env"
+cluster="movies-$env"
 
 aws eks update-kubeconfig --region "${AWS_REGION:-eu-west-3}" --name "$cluster" --alias "$cluster" >/dev/null
 
@@ -25,5 +25,5 @@ secret() {
 echo "Grafana of $env: http://localhost:$PORT"
 echo "  user:     $(secret admin-user)"
 echo "  password: $(secret admin-password)"
-echo "Dashboards: Kubernetes / Compute Resources / Namespace (Pods), namespace code-keeper"
+echo "Dashboards: Kubernetes / Compute Resources / Namespace (Pods), namespace movies"
 exec kubectl --context "$cluster" -n monitoring port-forward service/monitoring-grafana "$PORT:80"

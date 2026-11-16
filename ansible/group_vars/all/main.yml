@@ -5,7 +5,7 @@ gitlab_url: "https://{{ gitlab_host }}"
 gitlab_api_url: "{{ gitlab_url }}/api/v4"
 
 # Certificate authority kept on the admin machine; its private key never leaves it.
-pki_dir: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/share/code-keeper/pki"
+pki_dir: "{{ lookup('ansible.builtin.env', 'HOME') }}/.local/share/movies/pki"
 pki_ca_cert: "{{ pki_dir }}/ca.crt"
 
 # Pinned versions, upgraded on purpose by changing them here and re-running the playbook.
@@ -26,7 +26,7 @@ gitlab_users:
     name: Stakeholder
     email: stakeholder@example.com
     admin: false
-  # Opens the dependency update merge requests (code-keeper/renovate).
+  # Opens the dependency update merge requests (movies/renovate).
   - username: renovate-bot
     name: Renovate Bot
     email: renovate-bot@example.com
@@ -34,9 +34,9 @@ gitlab_users:
 
 # Group holding the four repositories, one per application plus the infrastructure.
 gitlab_group:
-  name: code-keeper
-  path: code-keeper
-  description: Microservices of the code-keeper project and their infrastructure
+  name: movies
+  path: movies
+  description: Microservices of the Infrastructure project and their infrastructure
 
 gitlab_projects:
   - name: inventory-app

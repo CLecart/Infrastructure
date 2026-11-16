@@ -35,10 +35,10 @@ case "$app" in
 esac
 
 region="${AWS_REGION:-eu-west-3}"
-context="code-keeper-$env"
+context="movies-$env"
 url="$(aws apigatewayv2 get-apis --region "$region" \
-  --query "Items[?Name=='code-keeper-$env'].ApiEndpoint | [0]" --output text)$path"
-aws eks update-kubeconfig --region "$region" --name "code-keeper-$env" --alias "$context" >/dev/null
+  --query "Items[?Name=='movies-$env'].ApiEndpoint | [0]" --output text)$path"
+aws eks update-kubeconfig --region "$region" --name "movies-$env" --alias "$context" >/dev/null
 
 results="$(mktemp)"
 sender=""
@@ -71,11 +71,11 @@ send_requests &
 sender=$!
 sleep 5
 image() {
-  kubectl --context "$context" -n code-keeper get "deployment/$app" \
+  kubectl --context "$context" -n movies get "deployment/$app" \
     -o jsonpath='{.spec.template.spec.containers[0].image}'
 }
 if [[ "$mode" == rollout ]]; then
-  kubectl --context "$context" -n code-keeper rollout restart "deployment/$app"
+  kubectl --context "$context" -n movies rollout restart "deployment/$app"
 elif [[ "$mode" == watch ]]; then
   image_before="$(image)"
   echo "watching for ${seconds}s: approve the deployment now"
@@ -83,13 +83,13 @@ elif [[ "$mode" == watch ]]; then
 else
   # The node of the first replica. Like a node update, kubectl drain goes
   # through the eviction API, which honours the PodDisruptionBudget.
-  node="$(kubectl --context "$context" -n code-keeper get pods -l "app=$app" \
+  node="$(kubectl --context "$context" -n movies get pods -l "app=$app" \
     -o jsonpath='{.items[0].spec.nodeName}')"
   kubectl --context "$context" drain "$node" --pod-selector "app=$app" \
     --ignore-daemonsets --delete-emptydir-data --timeout=5m
 fi
 # Until every replica is ready again.
-kubectl --context "$context" -n code-keeper rollout status "deployment/$app" --timeout=5m
+kubectl --context "$context" -n movies rollout status "deployment/$app" --timeout=5m
 # Keep sending a little after the end (old pods still terminating).
 sleep 15
 touch "$results.stop"

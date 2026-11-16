@@ -1,4 +1,4 @@
-# Network isolation of the code-keeper namespace (enforced by the VPC CNI,
+# Network isolation of the movies namespace (enforced by the VPC CNI,
 # enableNetworkPolicy in terraform/modules/environment/eks.tf).
 #
 # Every incoming connection is refused, then only the flows the application
@@ -18,7 +18,7 @@ kind: NetworkPolicy
 metadata:
   name: default-deny-ingress
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   podSelector: {}
   policyTypes:
@@ -32,7 +32,7 @@ kind: NetworkPolicy
 metadata:
   name: api-gateway-ingress
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   podSelector:
     matchLabels:
@@ -49,7 +49,7 @@ kind: NetworkPolicy
 metadata:
   name: inventory-app-ingress
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   podSelector:
     matchLabels:
@@ -70,7 +70,7 @@ kind: NetworkPolicy
 metadata:
   name: rabbitmq-ingress
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   podSelector:
     matchLabels:
@@ -93,7 +93,7 @@ kind: NetworkPolicy
 metadata:
   name: inventory-db-ingress
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   podSelector:
     matchLabels:
@@ -114,7 +114,7 @@ kind: NetworkPolicy
 metadata:
   name: billing-db-ingress
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   podSelector:
     matchLabels:

@@ -105,7 +105,7 @@
 - name: Create the user accounts
   ansible.builtin.include_tasks: users.yml
 
-# Token of the Renovate bot (code-keeper/renovate project), with the scopes
+# Token of the Renovate bot (movies/renovate project), with the scopes
 # its documentation asks for: api, read_user, write_repository.
 - name: Prepare the token of the Renovate bot
   ansible.builtin.include_tasks: personal_token.yml

@@ -27,7 +27,7 @@
     - name: Hand the token value to the Rails runner
       ansible.builtin.copy:
         content: "{{ personal_token_value }}"
-        dest: /run/code-keeper-token
+        dest: /run/movies-token
         owner: git
         group: git
         mode: "0400"
@@ -42,12 +42,12 @@
             user = User.find_by_username('{{ personal_token_user }}');
             user.personal_access_tokens.active.where(name: '{{ personal_token_name }}').each(&:revoke!);
             token = user.personal_access_tokens.create(scopes: {{ personal_token_scopes | to_json }}, name: '{{ personal_token_name }}', expires_at: {{ personal_token_days }}.days.from_now);
-            token.set_token(File.read('/run/code-keeper-token').strip);
+            token.set_token(File.read('/run/movies-token').strip);
             token.save!
       changed_when: true
 
   always:
     - name: Remove the token file
       ansible.builtin.file:
-        path: /run/code-keeper-token
+        path: /run/movies-token
         state: absent

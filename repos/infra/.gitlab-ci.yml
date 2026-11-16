@@ -1,4 +1,4 @@
-# Pipeline of the infrastructure (code-keeper/infra): Terraform of the staging
+# Pipeline of the infrastructure (movies/infra): Terraform of the staging
 # and production environments, then their platform layer (databases, RabbitMQ,
 # monitoring).
 #
@@ -19,7 +19,7 @@
 #   variable): the same stages delete both environments, production after approval.
 #
 # AWS access: each job exchanges its ID token for the role of this project
-# (OIDC, role code-keeper-ci-infra), which only the main branch may assume.
+# (OIDC, role movies-ci-infra), which only the main branch may assume.
 
 workflow:
   rules:

@@ -8,7 +8,7 @@ kind: ResourceQuota
 metadata:
   name: no-load-balancers
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   hard:
     services.loadbalancers: "0"

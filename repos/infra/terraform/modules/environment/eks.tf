@@ -82,7 +82,7 @@ module "eks" {
         }
       }
     },
-    # Deployment jobs of each application (bootstrap/iam.tf of the code-keeper
+    # Deployment jobs of each application (bootstrap/iam.tf of the Infrastructure
     # repository): no EKS access policy, only a Kubernetes group. The Role bound
     # to that group (platform/rbac.yaml) covers the objects of the application
     # alone: never the databases, RabbitMQ, the Secrets or another application.

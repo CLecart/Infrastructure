@@ -1,6 +1,6 @@
 # renovate
 
-Robot de mise à jour des dépendances du groupe code-keeper : [Renovate](https://docs.renovatebot.com/), auto-hébergé dans GitLab.
+Robot de mise à jour des dépendances du groupe movies : [Renovate](https://docs.renovatebot.com/), auto-hébergé dans GitLab.
 
 | | |
 |---|---|
@@ -15,11 +15,11 @@ Robot de mise à jour des dépendances du groupe code-keeper : [Renovate](https:
 | Fichier | Rôle |
 |---|---|
 | `.gitlab-ci.yml` | Le job `renovate` (image officielle `ghcr.io/renovatebot/renovate`), lancé seulement par la programmation ou à la main sur `main` ; le job `validate-config` (`renovate-config-validator --strict`), à chaque push et demande de fusion |
-| `default.json` | Réglages communs, repris par chaque dépôt avec `"extends": ["local>code-keeper/renovate"]` |
+| `default.json` | Réglages communs, repris par chaque dépôt avec `"extends": ["local>movies/renovate"]` |
 | `renovate.json` | Ce dépôt se met lui-même à jour (version de l'image Renovate) |
 
 ## Secret
 
 `RENOVATE_TOKEN` : jeton personnel du compte `renovate-bot` (droits `api`, `read_user`, `write_repository`), variable CI **masquée et protégée**, créée par Ansible depuis le coffre chiffré. Il n'est jamais écrit dans le code.
 
-Ce dépôt est publié depuis le dossier `repos/renovate/` du dépôt code-keeper.
+Ce dépôt est publié depuis le dossier `repos/renovate/` du dépôt Infrastructure.

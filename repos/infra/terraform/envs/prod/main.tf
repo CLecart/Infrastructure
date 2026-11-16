@@ -8,7 +8,7 @@ terraform {
     }
   }
 
-  # State in the S3 bucket created by bootstrap/ (code-keeper repository). The
+  # State in the S3 bucket created by bootstrap/ (movies repository). The
   # bucket name is not in the code: the pipeline passes it from the CI variable
   # TF_STATE_BUCKET (terraform init -backend-config="bucket=$TF_STATE_BUCKET").
   backend "s3" {
@@ -24,7 +24,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = "code-keeper"
+      Project     = "movies"
       Environment = "prod"
       ManagedBy   = "terraform"
     }

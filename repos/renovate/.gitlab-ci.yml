@@ -1,4 +1,4 @@
-# Pipeline of code-keeper/renovate: runs Renovate (self-hosted, official image,
+# Pipeline of movies/renovate: runs Renovate (self-hosted, official image,
 # set up as the renovate-bot/renovate-runner project advises) on the
 # repositories of the group, from the pipeline schedule (every working day) or
 # by hand (Build > Pipeline schedules > Run).
@@ -41,7 +41,7 @@ renovate:
     RENOVATE_ENDPOINT: $CI_API_V4_URL
     # Only the repositories of the group that hold a renovate.json.
     RENOVATE_AUTODISCOVER: "true"
-    RENOVATE_AUTODISCOVER_FILTER: "code-keeper/*"
+    RENOVATE_AUTODISCOVER_FILTER: "movies/*"
     RENOVATE_ONBOARDING: "false"
     RENOVATE_REQUIRE_CONFIG: required
     RENOVATE_GIT_AUTHOR: "Renovate Bot <renovate-bot@example.com>"

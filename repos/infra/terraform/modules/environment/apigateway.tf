@@ -33,7 +33,7 @@ resource "aws_apigatewayv2_vpc_link" "this" {
 resource "aws_apigatewayv2_api" "this" {
   name          = local.name
   protocol_type = "HTTP"
-  description   = "Public HTTPS entry of the code-keeper microservices (${var.environment})"
+  description   = "Public HTTPS entry of the movies microservices (${var.environment})"
 }
 
 resource "aws_apigatewayv2_authorizer" "cognito" {

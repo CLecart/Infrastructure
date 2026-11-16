@@ -1,7 +1,7 @@
 variable "project" {
   description = "Project name, first part of every resource name."
   type        = string
-  default     = "code-keeper"
+  default     = "movies"
 }
 
 variable "environment" {

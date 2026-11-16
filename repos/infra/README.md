@@ -1,21 +1,21 @@
 # infra
 
-Infrastructure des deux environnements du projet code-keeper, **staging** et **prod**, décrite avec Terraform. Elle reprend l'architecture de cloud-design.
+Infrastructure des deux environnements du projet Infrastructure, **staging** et **prod**, décrite avec Terraform. Elle reprend l'architecture de cloud-design.
 
 | Couche | Contenu | Où |
 |---|---|---|
 | AWS | VPC sur 2 zones avec 1 NAT, cluster EKS 1.36 (2 à 3 nœuds c7i-flex.large), ALB interne, API Gateway HTTPS + Cognito, journaux et tableau de bord CloudWatch | `terraform/modules/environment/` |
 | Environnements | Le même module appelé deux fois : seuls le nom et la plage réseau changent | `terraform/envs/staging/`, `terraform/envs/prod/` |
-| Plateforme Kubernetes | Espace `code-keeper`, stockage chiffré, 2 bases PostgreSQL, RabbitMQ, règles réseau, droits des pipelines d'applications, Cluster Autoscaler, Prometheus + Grafana, Fluent Bit | `platform/`, `scripts/deploy-platform.sh` |
+| Plateforme Kubernetes | Espace `movies`, stockage chiffré, 2 bases PostgreSQL, RabbitMQ, règles réseau, droits des pipelines d'applications, Cluster Autoscaler, Prometheus + Grafana, Fluent Bit | `platform/`, `scripts/deploy-platform.sh` |
 | Images de plateforme | `inventory-database`, `billing-database`, `rabbitmq-server` (Alpine) | `images/` |
 
-Les applications (`inventory-app`, `billing-app`, `api-gateway-app`) sont déployées par leurs propres pipelines dans l'espace `code-keeper`.
+Les applications (`inventory-app`, `billing-app`, `api-gateway-app`) sont déployées par leurs propres pipelines dans l'espace `movies`.
 
 ## Ce qui différencie staging et prod
 
 | | staging | prod |
 |---|---|---|
-| Nom (cluster, préfixe de toutes les ressources) | `code-keeper-staging` | `code-keeper-prod` |
+| Nom (cluster, préfixe de toutes les ressources) | `movies-staging` | `movies-prod` |
 | Plage du VPC | `10.0.0.0/16` | `10.1.0.0/16` |
 | État Terraform (S3) | `envs/staging/terraform.tfstate` | `envs/prod/terraform.tfstate` |
 
@@ -23,8 +23,8 @@ Tout le reste (types et nombre de machines, services, réglages) est identique.
 
 ## Secrets et droits
 
-- Aucune clé AWS : le pipeline prend le rôle `code-keeper-ci-infra` avec le jeton d'identité de son job (OIDC). Seule la branche protégée `main` de ce dépôt y a droit. Ce rôle crée les clusters et en est administrateur.
-- Les pipelines des applications n'ont, dans Kubernetes, que les droits de leur propre déploiement. Leur rôle `code-keeper-ci-<application>` n'a aucune politique d'accès EKS : EKS le place dans le groupe Kubernetes `code-keeper-deploy-<application>` (`terraform/modules/environment/eks.tf`), auquel `platform/rbac.yaml` donne un Role limité à ses propres objets :
+- Aucune clé AWS : le pipeline prend le rôle `movies-ci-infra` avec le jeton d'identité de son job (OIDC). Seule la branche protégée `main` de ce dépôt y a droit. Ce rôle crée les clusters et en est administrateur.
+- Les pipelines des applications n'ont, dans Kubernetes, que les droits de leur propre déploiement. Leur rôle `movies-ci-<application>` n'a aucune politique d'accès EKS : EKS le place dans le groupe Kubernetes `movies-deploy-<application>` (`terraform/modules/environment/eks.tf`), auquel `platform/rbac.yaml` donne un Role limité à ses propres objets :
 
   | Commande du job de déploiement | Droits |
   |---|---|
@@ -32,7 +32,7 @@ Tout le reste (types et nombre de machines, services, réglages) est identique.
   | `kubectl rollout status` | Lire et suivre **son** Deployment ou StatefulSet |
   | `kubectl get pods -l` | Lire les pods |
 
-  Rien d'autre : ni les secrets, ni les bases, ni RabbitMQ, ni les autres applications, ni le quota, ni les règles réseau, ni les droits eux-mêmes, et aucune suppression. RBAC ne peut pas limiter une **création** à un nom (l'objet n'existe pas encore) : un pipeline d'application peut créer d'autres objets de ces types, sans pouvoir modifier ni supprimer ceux des autres. `Scripts/rbac-test.sh staging|prod` (dépôt code-keeper) le vérifie dans le cluster.
+  Rien d'autre : ni les secrets, ni les bases, ni RabbitMQ, ni les autres applications, ni le quota, ni les règles réseau, ni les droits eux-mêmes, et aucune suppression. RBAC ne peut pas limiter une **création** à un nom (l'objet n'existe pas encore) : un pipeline d'application peut créer d'autres objets de ces types, sans pouvoir modifier ni supprimer ceux des autres. `Scripts/rbac-test.sh staging|prod` (dépôt movies) le vérifie dans le cluster.
 - Le nom du stockage d'état et les IP autorisées sur l'API EKS viennent de variables CI protégées, pas du code.
 - Les mots de passe des bases et de RabbitMQ sont tirés au hasard dans le cluster par `scripts/deploy-platform.sh`, au premier déploiement. Ils ne sont jamais affichés ni écrits dans Git.
 
@@ -72,8 +72,8 @@ docker run --rm -v "$PWD:/src:ro" -w /src public.ecr.aws/aquasecurity/trivy:0.76
 | Script | Rôle |
 |---|---|
 | `scripts/deploy-platform.sh staging\|prod` | Installe la couche plateforme après `terraform apply` |
-| `scripts/remove-platform.sh staging\|prod` | Supprime l'espace `code-keeper` et attend la suppression de ses disques EBS, **avant** `terraform destroy` ; relancé après une suppression interrompue, il passe ce qui est déjà fait |
+| `scripts/remove-platform.sh staging\|prod` | Supprime l'espace `movies` et attend la suppression de ses disques EBS, **avant** `terraform destroy` ; relancé après une suppression interrompue, il passe ce qui est déjà fait |
 | `scripts/image-tag.sh <image>` | Étiquette d'une image de plateforme : le dernier commit qui a modifié `images/<image>` |
 | `scripts/grafana.sh staging\|prod` | Ouvre Grafana sur http://localhost:3001 (port-forward) |
 
-Ce dépôt est publié depuis le dossier `repos/infra/` du dépôt code-keeper.
+Ce dépôt est publié depuis le dossier `repos/infra/` du dépôt Infrastructure.

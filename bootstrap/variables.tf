@@ -7,7 +7,7 @@ variable "region" {
 variable "project" {
   description = "Name prefix of every resource."
   type        = string
-  default     = "code-keeper"
+  default     = "movies"
 }
 
 variable "admin_cidrs" {
@@ -34,7 +34,7 @@ variable "team_cidrs" {
 variable "ssh_public_key_path" {
   description = "Public key installed on both machines; Ansible connects with the matching private key."
   type        = string
-  default     = "~/.ssh/code-keeper.pub"
+  default     = "~/.ssh/movies.pub"
 }
 
 variable "vpc_cidr" {
@@ -95,7 +95,7 @@ variable "environments" {
 variable "gitlab_group" {
   description = "GitLab group of the projects, part of the subject claim of their ID tokens."
   type        = string
-  default     = "code-keeper"
+  default     = "movies"
 }
 
 variable "images_to_keep" {

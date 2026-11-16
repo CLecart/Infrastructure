@@ -1,4 +1,4 @@
-# Pipeline of an application of the code-keeper group: continuous integration
+# Pipeline of an application of the movies group: continuous integration
 # on every push and merge request, continuous deployment from the protected
 # main branch.
 #
@@ -10,9 +10,9 @@
 #   (stakeholder) runs the manual job approve-production.
 #
 # AWS access: each job of main exchanges its ID token for the role of this
-# project (OIDC, code-keeper-ci-<application>): push of its own image only, and
+# project (OIDC, movies-ci-<application>): push of its own image only, and
 # in the clusters, changes to its own objects only (Kubernetes group
-# code-keeper-deploy-<application>, platform/rbac.yaml of the infra repository).
+# movies-deploy-<application>, platform/rbac.yaml of the infra repository).
 #
 # The pipelines of the three applications are identical except for the two
 # variables below.
@@ -20,7 +20,7 @@
 variables:
   APP_NAME: api-gateway-app
   K8S_WORKLOAD: deployment/api-gateway
-  IMAGE: $ECR_REGISTRY/code-keeper/$APP_NAME
+  IMAGE: $ECR_REGISTRY/movies/$APP_NAME
   TRIVY_IMAGE: public.ecr.aws/aquasecurity/trivy:0.76.1
   # Runs the SAST analyzers in merge request pipelines too (the template only
   # adds them to branch pipelines otherwise, and sast-gate needs semgrep-sast).
@@ -174,7 +174,7 @@ containerization:
   script:
     - aws ecr get-login-password | docker login --username AWS --password-stdin "$ECR_REGISTRY"
     - |
-      if aws ecr describe-images --repository-name "code-keeper/$APP_NAME" --image-ids imageTag="$CI_COMMIT_SHORT_SHA" >/dev/null 2>&1; then
+      if aws ecr describe-images --repository-name "movies/$APP_NAME" --image-ids imageTag="$CI_COMMIT_SHORT_SHA" >/dev/null 2>&1; then
         echo "$IMAGE:$CI_COMMIT_SHORT_SHA is already in ECR"
       else
         docker build --pull --provenance=false --sbom=false --tag "$IMAGE:$CI_COMMIT_SHORT_SHA" .
@@ -191,7 +191,7 @@ containerization:
 
 # ---- CD (main only) ---------------------------------------------------------------
 
-# Rolling update of the application in the code-keeper namespace of a cluster:
+# Rolling update of the application in the movies namespace of a cluster:
 # the new pods must be ready before the old ones stop (strategy and probes of
 # k8s/), and the job waits for the end of the rollout.
 .deploy:
@@ -201,7 +201,7 @@ containerization:
     - !reference [.aws, before_script]
     - apk add --no-cache aws-cli kubectl >/dev/null
   script:
-    - aws eks update-kubeconfig --name "code-keeper-$ENV" --alias "code-keeper-$ENV"
+    - aws eks update-kubeconfig --name "movies-$ENV" --alias "movies-$ENV"
     - mkdir -p .deploy
     - |
       cat > .deploy/kustomization.yaml <<EOF
@@ -215,8 +215,8 @@ containerization:
           newTag: "$IMAGE_TAG"
       EOF
     - kubectl apply -k .deploy
-    - kubectl -n code-keeper rollout status "$K8S_WORKLOAD" --timeout=5m
-    - kubectl -n code-keeper get pods -l "app=${K8S_WORKLOAD#*/}" -o wide
+    - kubectl -n movies rollout status "$K8S_WORKLOAD" --timeout=5m
+    - kubectl -n movies get pods -l "app=${K8S_WORKLOAD#*/}" -o wide
   rules:
     - *on-main
 

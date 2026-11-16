@@ -141,8 +141,11 @@ configuration Ansible de GitLab, les pipelines GitLab CI, les manifests Helm
   état Terraform, aucune variable locale, aucun secret Ansible ni preuve de test.
 - Le compte-rendu et la fiche de révision d'origine sont conservés dans
   [docs/import/code-keeper/](docs/import/code-keeper/).
-- Les noms de ressources portent encore le préfixe `code-keeper` ; ils seront
-  renommés pour ce projet.
+- Les ressources (AWS, Kubernetes, groupe GitLab) portent le nom de
+  l'application qu'elles servent, un catalogue de films avec prise de
+  commandes : **`movies`** (`movies-staging`, `movies/billing-app`,
+  `movies-ci-infra`…). Le nom tient sous la limite de 32 caractères d'AWS pour
+  le groupe cible de l'ALB (`movies-staging-api-gateway`, 26).
 
 Les mêmes services figurent dans les projets antérieurs, qui restent des
 références pour certaines sous-phases :

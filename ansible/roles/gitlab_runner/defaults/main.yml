@@ -6,13 +6,13 @@
 #     "socket binding": no privileged mode, but the job controls the Docker
 #     daemon of the machine), one job at a time.
 gitlab_runners:
-  - name: code-keeper-runner
+  - name: movies-runner
     tags: ""
     run_untagged: true
     access_level: not_protected
     docker_socket: false
     limit: 0
-  - name: code-keeper-builder
+  - name: movies-builder
     tags: docker-build
     run_untagged: false
     access_level: ref_protected

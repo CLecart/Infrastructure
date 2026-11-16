@@ -7,7 +7,7 @@ cloudProvider: aws
 awsRegion: eu-west-3
 
 autoDiscovery:
-  # CLUSTER_NAME is replaced by scripts/deploy-platform.sh (code-keeper-<environment>).
+  # CLUSTER_NAME is replaced by scripts/deploy-platform.sh (movies-<environment>).
   clusterName: CLUSTER_NAME
 
 # The autoscaler minor version should match the Kubernetes one (1.36); the chart

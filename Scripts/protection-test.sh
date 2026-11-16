@@ -32,7 +32,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP="${1:-inventory-app}"
 GITLAB="https://$(terraform -chdir="$ROOT_DIR/bootstrap" output -raw gitlab_public_ip)"
 API="$GITLAB/api/v4"
-CA="$HOME/.local/share/code-keeper/pki/ca.crt"
+CA="$HOME/.local/share/movies/pki/ca.crt"
 ROOT_TOKEN="$(cd "$ROOT_DIR/ansible" && ansible-vault view group_vars/all/vault.yml |
   sed -n -E 's/^vault_gitlab_api_token: *"?([^"]*)"?$/\1/p')"
 
@@ -57,16 +57,16 @@ token_id="$(as_root "$API/users/$dev_id/impersonation_tokens?state=active&per_pa
 branch="protection-test-$(date +%Y%m%d-%H%M%S)"
 created_project=""
 cleanup() {
-  as_root -o /dev/null -X DELETE "$API/projects/$(enc "code-keeper/$APP")/repository/branches/$branch" || true
+  as_root -o /dev/null -X DELETE "$API/projects/$(enc "movies/$APP")/repository/branches/$branch" || true
   if [[ -n "$created_project" ]]; then as_root -o /dev/null -X DELETE "$API/projects/$created_project" || true; fi
   as_root -o /dev/null -X DELETE "$API/users/$dev_id/impersonation_tokens/$token_id" || true
   echo "impersonation token revoked, branch $branch deleted${created_project:+, project $created_project marked for deletion}"
 }
 trap cleanup EXIT
 
-project="$(enc "code-keeper/$APP")"
-infra="$(enc code-keeper/infra)"
-echo "== acting as developer (Developer role) on code-keeper/$APP"
+project="$(enc "movies/$APP")"
+infra="$(enc movies/infra)"
+echo "== acting as developer (Developer role) on movies/$APP"
 
 commit_body() {
   jq -n --arg b "$1" --arg s "$2" '{branch: $b, commit_message: "test: protection check", actions: [{action: "create", file_path: "protection-test.txt", content: $s}]}'
@@ -141,13 +141,13 @@ fi
 # an application is tried. None waiting leaves nothing to try, not a failure.
 approval_app="" approval_job=""
 for app in inventory-app billing-app api-gateway-app; do
-  approval_job="$(as_root "$API/projects/$(enc "code-keeper/$app")/jobs?scope%5B%5D=manual&per_page=100" |
+  approval_job="$(as_root "$API/projects/$(enc "movies/$app")/jobs?scope%5B%5D=manual&per_page=100" |
     jq -r '[.[] | select(.name == "approve-production" and .ref == "main")][0].id // empty')"
   if [[ -n "$approval_job" ]]; then approval_app="$app"; break; fi
 done
 if [[ -n "$approval_job" ]]; then
   check "9. running approve-production of $approval_app (job $approval_job) refused" \
-    "$(dev_status -X POST "$API/projects/$(enc "code-keeper/$approval_app")/jobs/$approval_job/play")" 403
+    "$(dev_status -X POST "$API/projects/$(enc "movies/$approval_app")/jobs/$approval_job/play")" 403
 else
   echo "  SKIP  9. running approve-production not tried: no approve-production job waits on main in inventory-app, billing-app or api-gateway-app"
   skipped=$((skipped + 1))

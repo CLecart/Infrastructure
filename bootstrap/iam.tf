@@ -2,13 +2,13 @@
 # policy only accepts the ID token of that project on its protected main
 # branch: a job of another branch or another project gets nothing.
 #
-#   code-keeper-ci-infra            Terraform of the environments (infra repository)
-#   code-keeper-ci-<application>    push of its own image, access to the clusters
+#   movies-ci-infra            Terraform of the environments (infra repository)
+#   movies-ci-<application>    push of its own image, access to the clusters
 
 locals {
   ci_projects = concat(["infra"], var.applications)
 
-  # Every resource of an environment is named code-keeper-<environment>-...;
+  # Every resource of an environment is named movies-<environment>-...;
   # the infra role may only manage IAM roles with these prefixes, never the
   # CI roles below, and each of them must carry the environment boundary.
   environment_prefixes = [for env in var.environments : "${var.project}-${env}"]
@@ -317,7 +317,7 @@ data "aws_iam_policy_document" "ci_application" {
 
   # What the deployment may do inside Kubernetes is set by the EKS access entry
   # of each environment (infra repository): the Kubernetes group
-  # code-keeper-deploy-<application>, whose Role covers its own objects only.
+  # movies-deploy-<application>, whose Role covers its own objects only.
   statement {
     sid       = "FindTheClusters"
     actions   = ["eks:DescribeCluster"]

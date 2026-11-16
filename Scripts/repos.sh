@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# The five GitLab repositories (group code-keeper) are kept in repos/<name>/ of
+# The five GitLab repositories (group movies) are kept in repos/<name>/ of
 # this repository. Their content is synchronised, not their history: GitLab
 # keeps its own (merge requests merged there included), this repository keeps
 # the one of its folders. Only committed changes are published.
-#   Scripts/repos.sh push [name...]   repos/<name> -> main of code-keeper/<name>
-#   Scripts/repos.sh pull [name...]   main of code-keeper/<name> -> repos/<name>
+#   Scripts/repos.sh push [name...]   repos/<name> -> main of movies/<name>
+#   Scripts/repos.sh pull [name...]   main of movies/<name> -> repos/<name>
 # push replaces the files of main by the committed files of repos/<name>, in one
 # commit (a fast-forward). It refuses when main holds a version this repository
 # has never had, e.g. a merge request merged in GitLab: pull it first, or it
@@ -14,7 +14,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-GROUP="code-keeper"
+GROUP="movies"
 
 usage() {
   echo "Usage: $0 push|pull [name...]" >&2
@@ -81,7 +81,7 @@ for name in "${names[@]}"; do
       {
         git -C "$ROOT" log -1 --format=%s -- "repos/$name"
         echo
-        echo "From repos/$name of code-keeper:"
+        echo "From repos/$name of Infrastructure:"
         git -C "$ROOT" log --reverse --format='- %s' "$known..HEAD" -- "repos/$name"
       } | git -C "$clone" commit --quiet -F -
       git -C "$clone" push --quiet origin main

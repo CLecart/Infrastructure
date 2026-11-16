@@ -16,7 +16,7 @@
 - name: Create the CA certificate request
   community.crypto.openssl_csr_pipe:
     privatekey_path: "{{ pki_dir }}/ca.key"
-    common_name: code-keeper CA
+    common_name: movies CA
     use_common_name_for_san: false
     basic_constraints:
       - "CA:TRUE"

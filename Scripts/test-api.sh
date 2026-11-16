@@ -14,11 +14,11 @@
 #
 # Environment:
 #   GATEWAY_URL     base URL of the API (default: the API Gateway endpoint of the
-#                   environment, found by name code-keeper-<environment>)
+#                   environment, found by name movies-<environment>)
 #   API_TOKEN       token sent as "Authorization: Bearer <token>" (default:
 #                   Scripts/api-token.sh <environment>)
-#   KUBE_CONTEXT    kubectl context of the cluster (default code-keeper-<environment>)
-#   NAMESPACE       namespace of the application (default code-keeper)
+#   KUBE_CONTEXT    kubectl context of the cluster (default movies-<environment>)
+#   NAMESPACE       namespace of the application (default movies)
 #   HEALTH_TIMEOUT  seconds to wait for /health (default 120)
 #   WAIT_TIMEOUT    seconds to wait for the database/queue to reflect a request (default 60)
 set -euo pipefail
@@ -51,16 +51,16 @@ done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REGION="${AWS_REGION:-eu-west-3}"
-KUBE_CONTEXT="${KUBE_CONTEXT:-code-keeper-$env}"
-NAMESPACE="${NAMESPACE:-code-keeper}"
+KUBE_CONTEXT="${KUBE_CONTEXT:-movies-$env}"
+NAMESPACE="${NAMESPACE:-movies}"
 GATEWAY_URL="${GATEWAY_URL:-$(aws apigatewayv2 get-apis --region "$REGION" \
-  --query "Items[?Name=='code-keeper-$env'].ApiEndpoint | [0]" --output text)}"
+  --query "Items[?Name=='movies-$env'].ApiEndpoint | [0]" --output text)}"
 if [[ -z "$GATEWAY_URL" || "$GATEWAY_URL" == None ]]; then
-  echo "error: no API Gateway code-keeper-$env (is the environment created?)" >&2
+  echo "error: no API Gateway movies-$env (is the environment created?)" >&2
   exit 1
 fi
 API_TOKEN="${API_TOKEN:-$("$ROOT_DIR/Scripts/api-token.sh" "$env")}"
-aws eks update-kubeconfig --region "$REGION" --name "code-keeper-$env" --alias "code-keeper-$env" >/dev/null
+aws eks update-kubeconfig --region "$REGION" --name "movies-$env" --alias "movies-$env" >/dev/null
 RABBITMQ_QUEUE=billing_queue
 HEALTH_TIMEOUT="${HEALTH_TIMEOUT:-120}"
 WAIT_TIMEOUT="${WAIT_TIMEOUT:-60}"
@@ -211,7 +211,7 @@ if [[ -z "$GATEWAY_URL" ]]; then
 fi
 
 # --- Scenario ----------------------------------------------------------------
-echo "${BOLD}code-keeper end-to-end test ($env)${RESET}"
+echo "${BOLD}movies end-to-end test ($env)${RESET}"
 echo "  gateway: $GATEWAY_URL   kubectl context: $KUBE_CONTEXT"
 
 section "1. API gateway health"

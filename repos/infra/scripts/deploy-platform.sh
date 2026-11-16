@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Installs the platform layer of an environment, after `terraform apply`:
 #
-#   1. kubeconfig of the cluster code-keeper-<environment>
+#   1. kubeconfig of the cluster movies-<environment>
 #   2. Helm charts: Cluster Autoscaler, monitoring (Prometheus + Grafana) and
 #      logging (Fluent Bit), before the workloads so their first logs are shipped
 #   3. namespace, then the database and RabbitMQ secrets: random, created once,
@@ -19,10 +19,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-NAMESPACE="code-keeper"
+NAMESPACE="movies"
 IMAGES=(inventory-database billing-database rabbitmq-server)
 # Chart versions pinned so every run installs exactly the same thing; Renovate
-# (code-keeper/renovate) proposes their updates through the comments below.
+# (movies/renovate) proposes their updates through the comments below.
 # renovate: datasource=helm depName=kube-prometheus-stack registryUrl=https://prometheus-community.github.io/helm-charts
 KUBE_PROMETHEUS_STACK_VERSION="92.11.0"
 # renovate: datasource=helm depName=fluent-bit registryUrl=https://fluent.github.io/helm-charts
@@ -34,7 +34,7 @@ env="${1:-}"
 [[ "$env" == staging || "$env" == prod ]] || { echo "usage: $0 staging|prod" >&2; exit 2; }
 region="${AWS_REGION:-eu-west-3}"
 registry="${ECR_REGISTRY:?ECR_REGISTRY must be set}"
-cluster="code-keeper-$env"
+cluster="movies-$env"
 
 for tool in aws kubectl helm; do
   command -v "$tool" >/dev/null 2>&1 || { echo "error: $tool is not installed" >&2; exit 1; }
@@ -57,7 +57,7 @@ create_secret() {
   fi
   kubectl -n "$NAMESPACE" create secret generic "$name" \
     --from-literal=username="$user" --from-literal=password="$(random_secret)" >/dev/null
-  kubectl -n "$NAMESPACE" label secret "$name" app.kubernetes.io/part-of=code-keeper >/dev/null
+  kubectl -n "$NAMESPACE" label secret "$name" app.kubernetes.io/part-of=movies >/dev/null
   echo "created secret $name"
 }
 
@@ -109,7 +109,7 @@ cp -r "$ROOT/platform" "$work/platform"
   echo "images:"
   for image in "${IMAGES[@]}"; do
     echo "  - name: $image"
-    echo "    newName: $registry/code-keeper/$image"
+    echo "    newName: $registry/movies/$image"
     echo "    newTag: \"$(tag_of "$image")\""
   done
 } >"$work/overlay/kustomization.yaml"

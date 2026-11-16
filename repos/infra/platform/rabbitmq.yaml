@@ -13,7 +13,7 @@ metadata:
   name: rabbitmq-config
   labels:
     app: rabbitmq
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 data:
   memory.conf: |
     # RabbitMQ sizes its memory alarm (60 %) from the RAM of the node, not from
@@ -28,7 +28,7 @@ metadata:
   name: rabbitmq
   labels:
     app: rabbitmq
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   clusterIP: None
   selector:
@@ -44,7 +44,7 @@ metadata:
   name: rabbitmq
   labels:
     app: rabbitmq
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
 spec:
   serviceName: rabbitmq
   replicas: 1
@@ -55,7 +55,7 @@ spec:
     metadata:
       labels:
         app: rabbitmq
-        app.kubernetes.io/part-of: code-keeper
+        app.kubernetes.io/part-of: movies
     spec:
       # None of the containers calls the Kubernetes API.
       automountServiceAccountToken: false
@@ -147,7 +147,7 @@ spec:
         name: data
         labels:
           app: rabbitmq
-          app.kubernetes.io/part-of: code-keeper
+          app.kubernetes.io/part-of: movies
       spec:
         storageClassName: gp3-encrypted
         accessModes:

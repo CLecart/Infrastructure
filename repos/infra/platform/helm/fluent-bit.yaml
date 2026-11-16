@@ -2,7 +2,7 @@
 # "fluent-bit" release in the "logging" namespace.
 #
 # A DaemonSet reads the container logs of every node and ships those of the
-# code-keeper namespace, and only them (far below the 5 GB/month CloudWatch
+# movies namespace, and only them (far below the 5 GB/month CloudWatch
 # free tier), to the log group created by terraform/modules/environment/observability.tf.
 # AWS permissions come from the EKS Pod Identity association of that file,
 # bound to the "fluent-bit" service account below.
@@ -23,7 +23,7 @@ config:
     [INPUT]
         Name              tail
         Tag               kube.*
-        Path              /var/log/containers/*_code-keeper_*.log
+        Path              /var/log/containers/*_movies_*.log
         multiline.parser  cri
         Mem_Buf_Limit     5MB
         Skip_Long_Lines   On

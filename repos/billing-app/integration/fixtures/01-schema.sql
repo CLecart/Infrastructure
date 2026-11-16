@@ -1,6 +1,6 @@
 -- Fixture of the integration tests: verbatim copy, below this header, of
 -- images/billing-database/init/01-schema.sql in the infra repository
--- (repos/infra/ of the code-keeper monorepo), so the tests run against the
+-- (repos/infra/ of the Infrastructure monorepo), so the tests run against the
 -- schema of the platform database. Keep both files identical.
 
 -- Schema of the billing database.

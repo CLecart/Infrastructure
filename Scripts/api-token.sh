@@ -2,8 +2,8 @@
 # Prints a Cognito access token (valid one hour) for the public API of an
 # environment, creating the test user on the first run.
 #
-# The user pool and its client are found by name (code-keeper-<environment>,
-# code-keeper-<environment>-api), so no Terraform state is needed. The user
+# The user pool and its client are found by name (movies-<environment>,
+# movies-<environment>-api), so no Terraform state is needed. The user
 # (default "auditor") gets a random password, saved in
 # .cognito-test-user-<environment> (mode 600, ignored by Git). The password
 # reaches the AWS CLI through a private temporary file, never the command line.
@@ -34,13 +34,13 @@ USERNAME="${COGNITO_USERNAME:-auditor}"
 region="${AWS_REGION:-eu-west-3}"
 
 pool="$(aws cognito-idp list-user-pools --region "$region" --max-results 60 \
-  --query "UserPools[?Name=='code-keeper-$env'].Id | [0]" --output text)"
+  --query "UserPools[?Name=='movies-$env'].Id | [0]" --output text)"
 if [[ -z "$pool" || "$pool" == None ]]; then
-  echo "error: no Cognito user pool code-keeper-$env (is the environment created?)" >&2
+  echo "error: no Cognito user pool movies-$env (is the environment created?)" >&2
   exit 1
 fi
 client="$(aws cognito-idp list-user-pool-clients --region "$region" --user-pool-id "$pool" \
-  --query "UserPoolClients[?ClientName=='code-keeper-$env-api'].ClientId | [0]" --output text)"
+  --query "UserPoolClients[?ClientName=='movies-$env-api'].ClientId | [0]" --output text)"
 
 saved() { sed -n "s/^$1=//p" "$CRED_FILE" 2>/dev/null; }
 
@@ -67,7 +67,7 @@ if [[ "$(saved pool)" != "$pool" || "$(saved username)" != "$USERNAME" ]]; then
   aws_json "$(printf '{"UserPoolId":"%s","Username":"%s","Password":"%s","Permanent":true}' "$pool" "$USERNAME" "$password")" \
     cognito-idp admin-set-user-password --region "$region"
   (umask 077 && printf 'pool=%s\nusername=%s\npassword=%s\n' "$pool" "$USERNAME" "$password" >"$CRED_FILE")
-  echo "created the Cognito user $USERNAME in code-keeper-$env (credentials in .cognito-test-user-$env)" >&2
+  echo "created the Cognito user $USERNAME in movies-$env (credentials in .cognito-test-user-$env)" >&2
 fi
 
 aws_json "$(printf '{"ClientId":"%s","AuthFlow":"USER_PASSWORD_AUTH","AuthParameters":{"USERNAME":"%s","PASSWORD":"%s"}}' \

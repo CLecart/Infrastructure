@@ -3,9 +3,9 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: code-keeper
+  name: movies
   labels:
-    app.kubernetes.io/part-of: code-keeper
+    app.kubernetes.io/part-of: movies
     # Pod Security admission: every pod of the namespace must follow the
     # "restricted" profile (non-root, no privilege escalation, all capabilities
     # dropped, seccomp, no host access). The application pipelines may create
