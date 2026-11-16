@@ -52,9 +52,8 @@ compte-rendu d'origine.
    - Kubernetes : chaque conteneur déclare ses `requests` et `limits`, ses sondes, et s'exécute sans privilège (`runAsNonRoot`, `allowPrivilegeEscalation: false`). Aucune garde ne le tient encore.
 
 5. **Zéro avertissement, zéro récidive :**
-   - Tout avertissement se résout à la source. Une remarque se corrige dans le code, jamais par une directive qui la fait taire (`# shellcheck disable`, `# hadolint ignore`, `eslint-disable`, `tflint-ignore`, `#trivy:ignore`, `NOSONAR`). Seul un faux positif connu de l'outil, prouvé par sa référence publique et un cas minimal, se contourne, par une forme du code qui l'évite.
+   - Tout avertissement se résout à la source. Une remarque se corrige dans le code, jamais par une directive qui la fait taire (`# shellcheck disable`, `# hadolint ignore`, `eslint-disable`, `tflint-ignore`, `#trivy:ignore`, `NOSONAR`). Seul un faux positif connu de l'outil, prouvé par sa référence publique et un cas minimal, se contourne, par une forme du code qui l'évite. [CIBLE] Aucune garde ne le tient encore.
    - Une trouvaille de sécurité acceptée se nomme dans le fichier d'exceptions de l'outil (`.trivyignore.yaml`), une entrée par trouvaille, bornée au fichier où elle tombe, sous le motif qui la justifie. Tenue par le job `iac-scan`.
-   - [CIBLE] Le socle importé porte encore sept directives de silence (`Scripts/inventory.sh`, `Scripts/tooling.sh`, `repos/billing-app/src/app.js`, les deux recettes des bases) : elles se résorbent.
 
 6. **Tests, CI/CD et journal de bord :**
    L'infrastructure se vérifie avant de s'appliquer, et chaque garde s'éprouve en cassant ce qu'elle garde.

@@ -30,10 +30,9 @@ EXPOSE 5432
 # SIGINT asks PostgreSQL for a "fast" shutdown (clean, no recovery on restart).
 STOPSIGNAL SIGINT
 
-# Shell form on purpose: POSTGRES_USER/POSTGRES_DB are only known at run time.
-# hadolint ignore=DL3025
+# Explicit shell: POSTGRES_USER and POSTGRES_DB are only known at run time.
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=5 \
-    CMD pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1 || exit 1
+    CMD ["sh", "-c", "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -h 127.0.0.1 || exit 1"]
 
 ENTRYPOINT ["/sbin/tini", "--", "docker-entrypoint.sh"]
 CMD ["postgres"]

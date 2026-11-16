@@ -22,8 +22,7 @@ COLUMNS_HEADER="REGION RUNNING OTHER-EC2 OTHER-EBS OTHER-EIP NAT ELB CLB EKS RDS
 count_region() {
   local r="$1"
   local q=(--region "$r" --output text)
-  # shellcheck disable=SC2016 # the backticks are JMESPath literals, not shell
-  local not_tooling='!(Tags[?Key==`Stack` && Value==`bootstrap`])'
+  local not_tooling="!(Tags[?Key=='Stack' && Value=='bootstrap'])"
   printf '%s %s %s %s %s %s %s %s %s %s %s %s\n' "$r" \
     "$(aws ec2 describe-instances "${q[@]}" --filters Name=instance-state-name,Values=pending,running,stopping,shutting-down --query 'length(Reservations[].Instances[])')" \
     "$(aws ec2 describe-instances "${q[@]}" --filters Name=instance-state-name,Values=stopped --query "length(Reservations[].Instances[?$not_tooling][])")" \
@@ -39,13 +38,11 @@ count_region() {
 }
 export -f count_region
 
-regions="$(aws ec2 describe-regions --query 'Regions[].RegionName' --output text)"
-echo "# Inventory, $(date '+%F %H:%M:%S'), $(wc -w <<<"$regions") Regions"
+read -r -a regions <<<"$(aws ec2 describe-regions --query 'Regions[].RegionName' --output text)"
+echo "# Inventory, $(date '+%F %H:%M:%S'), ${#regions[@]} Regions"
 
 # Each line must hold the Region and eleven numbers, otherwise an AWS call failed.
-# $regions is split on purpose (one Region per line); the single quotes keep $1 for bash -c.
-# shellcheck disable=SC2016,SC2086
-if ! rows="$(printf '%s\n' $regions | xargs -P 8 -I{} bash -c 'count_region "$1"' _ {} | sort)"; then
+if ! rows="$(printf '%s\n' "${regions[@]}" | xargs -P 8 -I{} bash -c "count_region \"\$1\"" _ {} | sort)"; then
   echo "error: an AWS call failed during the inventory" >&2
   exit 2
 fi
@@ -60,10 +57,9 @@ unexpected="$(awk '{ for (i = 2; i <= NF; i++) s += $i } END { print s + 0 }' <<
 
 echo
 echo "# Kept on purpose (tooling stack, Stack=bootstrap):"
-# shellcheck disable=SC2016 # the backticks are JMESPath literals, not shell
 aws ec2 describe-instances --region "${AWS_REGION:-eu-west-3}" \
   --filters Name=tag:Stack,Values=bootstrap \
-  --query 'Reservations[].Instances[].[Tags[?Key==`Name`]|[0].Value,State.Name]' --output text | sed 's/^/  /'
+  --query "Reservations[].Instances[].[Tags[?Key=='Name']|[0].Value,State.Name]" --output text | sed 's/^/  /'
 aws ec2 describe-volumes --region "${AWS_REGION:-eu-west-3}" --filters Name=tag:Stack,Values=bootstrap \
   --query 'Volumes[].[VolumeId,Size]' --output text | sed 's/^/  disk (GB) /'
 aws ecr describe-repositories --region "${AWS_REGION:-eu-west-3}" \
@@ -71,7 +67,7 @@ aws ecr describe-repositories --region "${AWS_REGION:-eu-west-3}" \
 
 echo
 if [[ "$unexpected" -eq 0 ]]; then
-  echo "OK: only the stopped tooling stack remains in the $(wc -w <<<"$regions") Regions."
+  echo "OK: only the stopped tooling stack remains in the ${#regions[@]} Regions."
 else
   echo "WARNING: $unexpected unexpected billable resource(s), see the table above." >&2
   exit 1

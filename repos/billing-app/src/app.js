@@ -23,9 +23,12 @@ export function createApp({ db, queue, logger }) {
     res.status(404).json({ error: 'Not found' });
   });
 
-  // Express recognises error handlers by their four-argument signature.
-  // eslint-disable-next-line no-unused-vars -- next must stay in that signature
+  // Express recognises error handlers by their four-argument signature; once the
+  // response has started, only its default handler can still close the connection.
   app.use((err, req, res, next) => {
+    if (res.headersSent) {
+      return next(err);
+    }
     logger.error('request failed', { method: req.method, path: req.path, err });
     res.status(500).json({ error: 'Internal server error' });
   });
