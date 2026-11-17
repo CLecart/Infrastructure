@@ -79,12 +79,13 @@ default:
 
 # ---- CI ------------------------------------------------------------------------
 
-# Installs the exact dependencies of package-lock.json and checks the syntax of
-# every source file.
+# Installs the exact production dependencies of package-lock.json, as the image
+# does, and checks the syntax of every source file. The test jobs run on this
+# artifact; only lint installs the development dependencies.
 build:
   stage: build
   script:
-    - npm ci --no-audit --no-fund
+    - npm ci --omit=dev --no-audit --no-fund
     # xargs fails when one check fails (find -exec ... \; would always exit 0).
     - find src -name '*.js' -print0 | xargs -0 -n 1 node --check
   artifacts:
@@ -119,8 +120,8 @@ integration-test:
     POSTGRES_PASSWORD: "ci-$CI_PIPELINE_ID-$CI_JOB_ID"
     RABBITMQ_DEFAULT_USER: ci
     RABBITMQ_DEFAULT_PASS: "ci-$CI_PIPELINE_ID-$CI_JOB_ID"
+  needs: [build]
   script:
-    - npm ci
     - npm run test:integration
 
 semgrep-sast:
@@ -162,9 +163,10 @@ dockerfile-lint:
 # the versions pinned in package.json (devDependencies).
 lint:
   stage: scan
+  needs: []
   image: public.ecr.aws/docker/library/node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
   script:
-    - npm ci
+    - npm ci --no-audit --no-fund
     - npm run lint
 
 # ---- containerization (main only) -----------------------------------------------
