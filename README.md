@@ -1,10 +1,10 @@
 # Infrastructure — Construction d'une infrastructure moderne, du réseau à la supervision
 
-**Auteur :** `clecart` — **Filière :** Master · Green IT — **Pile :** Docker 29.10.0 · Docker Compose 5.7.1 ·
+**Auteur :** `clecart` — **Filière :** Master · Green IT — **Pile :** Docker 29.10.0 (buildx 0.39.0) · Docker Compose 5.7.1 ·
 GitLab CE 19.5.1 · GitLab Runner 19.5.0 · Ansible 2.21.5 (collection `community.crypto` 3.5.1) ·
 Terraform 1.16.6 (fournisseur AWS 6.69.1, modules VPC 6.7.3 et EKS 21.29.0) · AWS CLI 2.38.2 ·
 Amazon EKS 1.36 · kubectl 1.36.4 · Helm 4.3.1 (charts kube-prometheus-stack 92.11.0, fluent-bit 0.58.3,
-cluster-autoscaler 9.59.0) · Trivy 0.76.1 · TFLint 0.64.0 · Renovate 44.176.2 · Node.js 24
+cluster-autoscaler 9.59.0) · Trivy 0.76.1 · TFLint 0.64.0 · Renovate 44.176.2 · jq 1.8.1 · Node.js 24
 
 Ce document est à la fois le **compte-rendu** du projet et sa **documentation
 complète**. Il reprend d'abord le sujet officiel, puis suit l'avancement des
@@ -732,7 +732,7 @@ Non exécutés : `semgrep-sast` et `sast-gate` (modèle de GitLab), `integration
 | Renovate auto-hébergé | une demande de fusion testée par mise à jour, chaque jour ouvré | Dependabot, propre à GitHub |
 | Tout détruire en fin de séance, socle compris | 0 $ entre deux séances ; la facture des projets précédents le confirme | éteindre GitLab et le runner : ≈ 13,80 $ par mois de disques et d'IP pour rien |
 | Clés SSH des machines neuves comparées à la console EC2 | aucune confiance accordée à la première connexion | accepter la clé au premier contact |
-| Outils des jobs Kubernetes et de déploiement : image AWS CLI par empreinte, kubectl et Helm vérifiés par leur SHA-256 | mesuré : `apk add` sans version donnait Helm 3.19.0, kubectl 1.36.1 et AWS CLI 2.34.63 au lieu des versions de la ligne Pile ; l'installation figée, éprouvée dans l'image, donne les versions exactes et refuse une archive dont la somme diffère | `apk add` sans version ; une image d'outils construite par le projet, à entretenir |
+| Outils des jobs de CI : image AWS CLI par empreinte (jq compris), kubectl, Helm, client Docker et buildx vérifiés par leur SHA-256, git par `dnf` verrouillé sur la version de l'image | mesuré : `apk add` sans version donnait Helm 3.19.0, kubectl 1.36.1 et AWS CLI 2.34.63, et les jobs Docker tournaient sur un client 29.9.2, au lieu des versions de la ligne Pile ; l'installation figée, éprouvée dans l'image (socket Docker du poste comprise), donne les versions exactes et refuse une archive dont la somme diffère | `apk add` sans version ; une image d'outils construite par le projet, à entretenir |
 | Porte locale qui rejoue la CI | le dépôt Gitea de l'école n'exécute rien ; un défaut se voit avant le push | ne vérifier que dans GitLab, qui n'existe que pendant une séance |
 
 ---
