@@ -82,7 +82,8 @@ compte-rendu d'origine.
 
 9. **Sobriété numérique et coûts (Green IT, FinOps) :**
    La sobriété se juge à ce qui tourne réellement, et à ce qu'il coûte.
-   - Une ressource facturée ne tourne que pendant qu'elle sert : ce qui n'est pas utilisé s'arrête (`Scripts/tooling.sh stop`) ou se détruit. Un environnement oublié est un défaut.
+   - Rien ne survit à une séance de travail, socle compris : le compte ne coûte rien entre deux séances. `Scripts/teardown.sh` détruit staging par son pipeline, puis le socle, puis lance l'inventaire des 17 régions, qui sort en échec s'il reste quoi que ce soit. Un environnement oublié est un défaut.
+   - Rien ne tourne pour rien, AWS ou poste : ce qui ne sert plus s'arrête aussitôt.
    - Chaque choix de dimensionnement se justifie : type d'instance, nombre de nœuds, NAT, stockage. L'option la moins coûteuse qui tient le besoin passe la première ; un écart se motive.
    - Les images restent légères : image de base minimale, construction en plusieurs étapes, aucune dépendance de développement dans l'image servie. Leur poids se mesure et se documente.
    - Toute dépendance ajoutée — module, chart, outil — se justifie : une dépendance qui remplace vingt lignes n'entre pas.
@@ -119,6 +120,7 @@ compte-rendu d'origine.
     Ce qui n'est pas en place ne se présente jamais comme existant : il se marque `[CIBLE]`, et le `[CIBLE]` se retire dès que le fait est acquis.
     - **Ne jamais annoncer une vérification non exécutée.** Un test non lancé se dit « non lancé ».
     - Les sorties citées dans la documentation sont capturées sur l'infrastructure réellement construite depuis ce dépôt, jamais reconstituées.
+    - Chaque séance laisse ses journaux bruts dans `preuves/<date>-<sujet>/`, ignoré par Git, avec un `LISEZMOI.md` qui dit ce que prouve chaque fichier ; un chiffre du `README.md` a sa capture. Un journal gardé dans un dossier temporaire n'est pas une preuve : il se range avant la fin de la séance.
     - L'arborescence décrite dans le `README.md` correspond au disque, fichier pour fichier.
 
 ---
@@ -139,4 +141,4 @@ compte-rendu d'origine.
     - Quand la mesure est impossible, on le dit, et on demande.
 
 19. **Un compte-rendu qui se défend devant un jury :**
-    `README.md` est à la fois le compte-rendu et la documentation complète : prérequis, installation, utilisation, architecture, choix techniques, coûts, sécurité, supervision, dépannage. Une fiche de révision (`REVISION-SOUTENANCE.md`) prépare la soutenance. [CIBLE] Elle reste à écrire.
+    `README.md` est à la fois le compte-rendu et la documentation complète : prérequis, installation, utilisation, architecture, choix techniques, coûts, sécurité, supervision, dépannage. `REVISION-AUDIT.md` prépare l'évaluation par un pair et la soutenance, comme dans les projets précédents : chiffres mesurés, déroulé de la démonstration, questions tirées du sujet et leurs réponses, alternatives et limites.
