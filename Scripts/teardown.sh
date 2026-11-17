@@ -8,8 +8,8 @@
 #      runs) and destroy-staging (terraform destroy); approve-production stays
 #      pending, there is no production
 #   2. terraform destroy of bootstrap/ (GitLab, runner, ECR repositories and
-#      images, state and OIDC buckets, IAM): its plan is printed, then applied
-#      after confirmation
+#      images, state and OIDC buckets, IAM): the summary of its plan is
+#      printed, then the plan is applied after confirmation
 #   3. the host keys of the released Elastic IPs leave ~/.ssh/known_hosts
 #   4. Scripts/inventory.sh in every Region (exit status 1 if anything is left)
 #

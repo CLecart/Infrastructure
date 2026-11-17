@@ -20,7 +20,8 @@
 #   KUBE_CONTEXT    kubectl context of the cluster (default movies-<environment>)
 #   NAMESPACE       namespace of the application (default movies)
 #   HEALTH_TIMEOUT  seconds to wait for /health (default 120)
-#   WAIT_TIMEOUT    seconds to wait for the database/queue to reflect a request (default 60)
+#   WAIT_TIMEOUT    seconds to wait for billing-db, and for the queue to drain, to reflect
+#                   a request (default 60); the message queued in step 4 is awaited 15 s
 set -euo pipefail
 
 usage() {
