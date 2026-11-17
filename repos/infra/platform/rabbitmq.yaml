@@ -15,10 +15,12 @@ metadata:
     app: rabbitmq
     app.kubernetes.io/part-of: movies
 data:
+  # RabbitMQ sizes its memory alarm (60 %) from the RAM of the node, not from
+  # the container limit: without this setting it would allow itself 2.2 GiB on
+  # a c7i-flex.large node and be OOM-killed at 512 MiB before its flow control
+  # ever kicks in; with it, the alarm sits at 307 MiB. Written here, outside the
+  # file, so that the deployed file holds the setting alone.
   memory.conf: |
-    # RabbitMQ sizes its memory alarm (60 %) from the RAM of the node, not from
-    # the container limit: without this it would allow itself 1.2 GiB and be
-    # OOM-killed at 512 MiB before its flow control ever kicks in.
     total_memory_available_override_value = 512MiB
 ---
 # Headless Service: DNS name of the broker and governing Service of the StatefulSet.
