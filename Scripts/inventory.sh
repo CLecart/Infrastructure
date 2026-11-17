@@ -18,20 +18,20 @@ COLUMNS_HEADER="REGION EC2 EBS EIP NAT ELB CLB EKS RDS LAMBDA LOGS ECR"
 # Counts are computed by the AWS CLI (JMESPath length() in --query), never by
 # counting lines.
 count_region() {
-  local r="$1"
-  local q=(--region "$r" --output text)
-  printf '%s %s %s %s %s %s %s %s %s %s %s %s\n' "$r" \
-    "$(aws ec2 describe-instances "${q[@]}" --filters Name=instance-state-name,Values=pending,running,stopping,stopped,shutting-down --query 'length(Reservations[].Instances[])')" \
-    "$(aws ec2 describe-volumes "${q[@]}" --query 'length(Volumes)')" \
-    "$(aws ec2 describe-addresses "${q[@]}" --query 'length(Addresses)')" \
-    "$(aws ec2 describe-nat-gateways "${q[@]}" --filter Name=state,Values=pending,available,deleting --query 'length(NatGateways)')" \
-    "$(aws elbv2 describe-load-balancers "${q[@]}" --query 'length(LoadBalancers)')" \
-    "$(aws elb describe-load-balancers "${q[@]}" --query 'length(LoadBalancerDescriptions)')" \
-    "$(aws eks list-clusters "${q[@]}" --query 'length(clusters)')" \
-    "$(aws rds describe-db-instances "${q[@]}" --query 'length(DBInstances)')" \
-    "$(aws lambda list-functions "${q[@]}" --query 'length(Functions)')" \
-    "$(aws logs describe-log-groups "${q[@]}" --query 'length(logGroups)')" \
-    "$(aws ecr describe-repositories "${q[@]}" --query 'length(repositories)')"
+  local region="$1"
+  local common_args=(--region "$region" --output text)
+  printf '%s %s %s %s %s %s %s %s %s %s %s %s\n' "$region" \
+    "$(aws ec2 describe-instances "${common_args[@]}" --filters Name=instance-state-name,Values=pending,running,stopping,stopped,shutting-down --query 'length(Reservations[].Instances[])')" \
+    "$(aws ec2 describe-volumes "${common_args[@]}" --query 'length(Volumes)')" \
+    "$(aws ec2 describe-addresses "${common_args[@]}" --query 'length(Addresses)')" \
+    "$(aws ec2 describe-nat-gateways "${common_args[@]}" --filter Name=state,Values=pending,available,deleting --query 'length(NatGateways)')" \
+    "$(aws elbv2 describe-load-balancers "${common_args[@]}" --query 'length(LoadBalancers)')" \
+    "$(aws elb describe-load-balancers "${common_args[@]}" --query 'length(LoadBalancerDescriptions)')" \
+    "$(aws eks list-clusters "${common_args[@]}" --query 'length(clusters)')" \
+    "$(aws rds describe-db-instances "${common_args[@]}" --query 'length(DBInstances)')" \
+    "$(aws lambda list-functions "${common_args[@]}" --query 'length(Functions)')" \
+    "$(aws logs describe-log-groups "${common_args[@]}" --query 'length(logGroups)')" \
+    "$(aws ecr describe-repositories "${common_args[@]}" --query 'length(repositories)')"
 }
 export -f count_region
 
