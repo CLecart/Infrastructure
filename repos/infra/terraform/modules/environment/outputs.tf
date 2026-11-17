@@ -37,8 +37,3 @@ output "alb_target_group_arn" {
   description = "Target group of the worker nodes (aws elbv2 describe-target-health)."
   value       = aws_lb_target_group.api_gateway.arn
 }
-
-output "vpc_id" {
-  description = "VPC of the environment."
-  value       = module.vpc.vpc_id
-}

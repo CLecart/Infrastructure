@@ -187,28 +187,15 @@ billing_app_gone() {
   [[ -z "$(kube get pods -l app=billing-app -o name 2>/dev/null)" ]]
 }
 
-# Never leave billing-app scaled to 0 when the script is interrupted half-way,
-# and stop the port-forward this script started.
+# Never leave billing-app scaled to 0 when the script is interrupted half-way.
 billing_stopped=false
-port_forward_pid=""
 cleanup() {
   if [[ "$billing_stopped" == true ]]; then
     echo "Scaling billing-app back to 1 (left stopped by an aborted run)" >&2
     kube scale statefulset billing-app --replicas=1 || true
   fi
-  if [[ -n "$port_forward_pid" ]]; then
-    kill "$port_forward_pid" 2>/dev/null || true
-  fi
 }
 trap cleanup EXIT
-
-if [[ -z "$GATEWAY_URL" ]]; then
-  # kubectl itself, not the kube function: a backgrounded function runs in a
-  # subshell, and $! would then name the subshell instead of kubectl.
-  kubectl --context "$KUBE_CONTEXT" -n "$NAMESPACE" port-forward service/api-gateway 13000:3000 >/dev/null 2>&1 &
-  port_forward_pid=$!
-  GATEWAY_URL=http://127.0.0.1:13000
-fi
 
 # --- Scenario ----------------------------------------------------------------
 echo "${BOLD}movies end-to-end test ($env)${RESET}"
