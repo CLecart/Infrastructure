@@ -113,7 +113,9 @@ echo "== 2. terraform destroy (bootstrap)"
 addresses=("$(out gitlab_public_ip)" "$(out runner_public_ip)")
 plan="$(mktemp)"
 trap 'rm -f "${plan:?}"' EXIT
-terraform -chdir="$ROOT/bootstrap" plan -destroy -input=false "${tf_color[@]}" -out="$plan" | grep -E '^Plan:|No changes'
+# -no-color whatever the output: Terraform colours even a pipe, and a bold
+# "Plan:" would escape the grep, stopping the script before the destroy.
+terraform -chdir="$ROOT/bootstrap" plan -destroy -input=false -no-color -out="$plan" | grep -E '^Plan:|No changes'
 if ! $assume_yes; then
   read -r -p "Destroy the tooling stack? Type yes: " answer </dev/tty
   [[ "$answer" == yes ]] || { echo "aborted: nothing destroyed in bootstrap/" >&2; exit 1; }
