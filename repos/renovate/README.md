@@ -6,7 +6,7 @@ Robot de mise à jour des dépendances du groupe movies : [Renovate](https://doc
 |---|---|
 | Quand | Chaque jour ouvré à 7 h (programmation du pipeline), ou à la main (**Build → Pipeline schedules → Run**) |
 | Où | Les dépôts du groupe qui contiennent un `renovate.json` : `inventory-app`, `billing-app`, `api-gateway-app`, `infra` et celui-ci |
-| Quoi | Paquets npm, images Docker (Dockerfile et `.gitlab-ci.yml`), fournisseurs et modules Terraform, charts Helm, image Trivy |
+| Quoi | Paquets npm, images Docker (Dockerfile et `.gitlab-ci.yml`), fournisseurs et modules Terraform, charts Helm, images Trivy et AWS CLI données par variable. Pas les binaires que les jobs vérifient par leur SHA-256 (kubectl, Helm, client Docker, buildx) : Renovate ne sait pas recalculer une somme, ils s'actualisent à la main |
 | Résultat | Une demande de fusion par mise à jour, une étiquetée `security` quand la base OSV signale une faille, et un ticket « Dependency Dashboard » par dépôt |
 | Qui fusionne | Un Maintainer, après le pipeline vert de la demande de fusion (le robot est Developer : il ne pousse jamais sur `main`) |
 
