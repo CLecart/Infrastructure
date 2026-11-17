@@ -13,17 +13,17 @@ le dossier local `preuves/`.
 |---|---|
 | Services | 6 : `api-gateway`, `inventory-app`, `billing-app`, `inventory-db`, `billing-db`, `rabbitmq` |
 | Images | 73 à 204 Mo, Alpine 3.23 épinglée par empreinte, non-root, construction en plusieurs étapes |
-| Pile Compose | 205 Mio de mémoire au repos ; construction sans cache 9 s ; saine en 17 s ; `Scripts/compose-test.sh` 92/92 |
+| Pile Compose | 211 Mio de mémoire au repos ; construction sans cache 10 s ; saine en 17 s ; `Scripts/compose-test.sh` 92/92 |
 | Réseau local | 6 réseaux Compose, dont 5 internes ; une seule entrée, sur `127.0.0.1:3000` |
 | Réseau AWS | VPC staging `10.0.0.0/16` (2 privés `/19`, 2 publics `/24`, 2 zones), outillage `10.100.0.0/24`, prod prévue en `10.1.0.0/16` ; une NAT |
-| Terraform | socle 54 ressources (59 s) ; staging 88 ressources (apply 11 min 53) |
-| Ansible | GitLab et runner en 9 min 23 ; relancé : `changed=0` sur les 3 hôtes |
-| Pipelines | `infra` n° 1 : 18 min jusqu'à staging ; applications : 2 min 13 à 3 min 40 du push au déploiement en staging |
-| Tests | 101 tests unitaires (40, 39, 22) ; scénario de bout en bout 16/16 par l'URL publique ; RBAC 118/118 ; protections 9/9 |
+| Terraform | socle 54 ressources (59 s) ; staging 88 ressources (apply 11 min 12) |
+| Ansible | GitLab et runner en 9 min 49 ; relancé : `changed=0` sur les 3 hôtes |
+| Pipelines | `infra` n° 1 : 17 min 30 jusqu'à staging ; applications : 2 min 26 à 3 min 03 du push au déploiement en staging |
+| Tests | 102 tests unitaires (40, 39, 23) ; complexité cognitive de 15 au plus, tenue par `lint` ; scénario de bout en bout 16/16 par l'URL publique ; RBAC 118/118 ; protections 9/9 |
 | Scaling | HPA 2 → 5 réplicas en 30 à 45 s ; 3e nœud prêt 48 s après la demande, plafond de 3 tenu ; retour à 2 nœuds en 4 min 24 |
 | Coûts | outillage ≈ 0,23 $/h, staging ≈ 0,39 $/h, séance ≈ 0,62 $/h ; 0 $ entre deux séances ; 9,79 $ dépensés sur les projets précédents, 190,21 $ de crédits restants |
-| Sans coupure | 126/126 et 124/124 requêtes en HTTP 200 pendant un remplacement de pods ; 131/131 pendant la vidange d'un nœud |
-| Sécurité | 6 images scannées par ECR sans vulnérabilité signalée ; 4 exceptions Trivy motivées ; aucune clé AWS dans les pipelines (OIDC) ; pod privilégié refusé par Pod Security |
+| Sans coupure | 110/110 et 117/117 requêtes en HTTP 200 pendant un remplacement de pods ; 146/146 pendant la vidange d'un nœud |
+| Sécurité | images d'application passées par Trivy à chaque pipeline ; 6 images scannées par ECR sans vulnérabilité signalée (seconde séance) ; 4 exceptions Trivy motivées ; aucune clé AWS dans les pipelines (OIDC) ; pod privilégié refusé par Pod Security |
 
 ## Déroulé de la démonstration
 
@@ -93,8 +93,11 @@ mesuré), avec un quota qui interdit tout load balancer créé hors de Terraform
 Deployments à 2 réplicas au moins, répartis sur les deux nœuds, avec un budget de
 perturbation ; `billing-app`, les bases et RabbitMQ sont des StatefulSets à une
 copie, les bases et RabbitMQ sur des disques gp3 chiffrés. Chaque conteneur déclare
-ses `requests` et `limits`. La supervision vit dans `monitoring`, les journaux dans
-`logging`.
+ses `requests` et `limits`. RabbitMQ reçoit sa mémoire par `memory.conf` : sans ce
+réglage, il placerait son alarme sur la RAM du nœud, à 2,24 Gio, et serait tué à sa
+limite de 512 Mio avant de freiner les producteurs ; avec, elle est à 307 Mio
+(mesuré sur un nœud, avec un pod jetable du même gabarit). La supervision vit dans
+`monitoring`, les journaux dans `logging`.
 
 #### 5. Comment le scaling fonctionne-t-il ?
 Deux niveaux. Les HPA ajoutent des réplicas quand le processeur dépasse 60 % de la
@@ -126,11 +129,13 @@ alertes.
 Pour chaque application : `build`, tests unitaires et d'intégration (vrais
 PostgreSQL et RabbitMQ), SAST, Trivy, hadolint, ESLint ; l'image n'est construite,
 scannée et poussée dans ECR que si tout est vert, puis déployée en staging ; la prod
-attend une approbation humaine. Pour l'infrastructure : images de plateforme,
-`init`, `validate` (`terraform validate`, TFLint, Trivy), plans des deux
-environnements, apply de staging et sa plateforme, approbation, apply de la prod ;
-avec `DESTROY=true`, le même chemin détruit. Seul `main` déploie, et seul un
-Maintainer peut lancer un pipeline sur `main` (prouvé : 9/9).
+attend une approbation humaine. `build` n'installe que les dépendances de
+production, que les tests réemploient ; seul `lint` installe ESLint, qui refuse
+toute fonction d'une complexité cognitive supérieure à 15. Pour l'infrastructure :
+images de plateforme, `init`, `validate` (`terraform validate`, TFLint, Trivy),
+plans des deux environnements, apply de staging et sa plateforme, approbation,
+apply de la prod ; avec `DESTROY=true`, le même chemin détruit. Seul `main`
+déploie, et seul un Maintainer peut lancer un pipeline sur `main` (prouvé : 9/9).
 
 #### 9. Pourquoi Terraform, et comment l'infrastructure reste-t-elle reproductible et destructible ?
 L'infrastructure est décrite, relue et versionnée : staging et prod sont le même
@@ -171,8 +176,9 @@ aucune capacité.
 #### 13. Comment les vulnérabilités sont-elles auditées ?
 À chaque pipeline, de façon bloquante sur HIGH et CRITICAL : Trivy sur les
 dépendances, les secrets et la configuration Terraform, Semgrep sur le code,
-hadolint sur les recettes ; ECR scanne chaque image à l'envoi (6 images, rien de
-signalé). La porte locale rejoue ces contrôles avant chaque push et refuse toute
+hadolint sur les recettes ; Trivy scanne l'image de chaque application avant son
+envoi, et ECR chaque image à l'envoi (6 images, rien de signalé à la seconde
+séance). La porte locale rejoue ces contrôles avant chaque push et refuse toute
 directive qui ferait taire un outil. Renovate propose les mises à jour chaque jour
 ouvré. Quatre trouvailles Trivy sont acceptées et motivées, une par une.
 
@@ -206,18 +212,34 @@ ouvré. Quatre trouvailles Trivy sont acceptées et motivées, une par une.
   empêchait l'opérateur de lire la version de Prometheus ; la garde de la porte ne
   vérifiait que le début de la référence. Empreintes passées par les champs des
   charts, garde rendue stricte et éprouvée sur les valeurs fautives.
+- **Une bibliothèque abandonnée** : `http-proxy`, sous la passerelle, affichait un
+  avertissement de dépréciation à chaque requête ; en la remplaçant, la mesure a
+  montré qu'un client restait bloqué sans fin quand `inventory-app` coupait en
+  pleine réponse. La nouvelle version coupe aussitôt et journalise ; un test le
+  garde, qui tombe sur l'ancienne.
+- **Un commentaire déployé, et faux** : l'explication du réglage mémoire de
+  RabbitMQ vivait dans le fichier de la ConfigMap et annonçait 1,2 Gio ; mesuré
+  sur un nœud, 2,24 Gio. Chiffre corrigé, commentaire sorti du fichier déployé.
+- **Des tests qui dépendaient de la version de Docker** : avant Docker 29, un job
+  lié à un service reçoit `RABBITMQ_PORT=tcp://…`, et `billing-app` refusait de
+  démarrer ; les tests lisent maintenant des variables à eux.
+- **Un plan du poste trompeur** : sur un staging vivant, il remplace l'entrée
+  d'accès EKS créée par la CI, parce qu'elle suit l'identité qui lance
+  Terraform ; seul le plan du pipeline fait foi (« No changes » mesuré).
 
 #### 15. Quelle sobriété (Green IT) ?
-Images minimales et mesurées, aucune dépendance de développement servie ; rien ne
-tourne pour rien, en local comme sur AWS ; plafonds d'autoscaling ; journaux et
-métriques gardés un jour ; un seul environnement allumé, seulement pendant les
-séances.
+Images minimales et mesurées, aucune dépendance de développement servie, ni
+installée par la CI hors du job `lint` (artefact de `build` de 19 à 23 Mo ramené à
+5 à 9) ; rien ne tourne pour rien, en local comme sur AWS ; plafonds
+d'autoscaling ; journaux et métriques gardés un jour ; un seul environnement
+allumé, seulement pendant les séances.
 
 #### 16. Si c'était à refaire, ou pour aller plus loin ?
 Une NAT par zone et des bases gérées (RDS) pour la haute disponibilité de
 production ; des NetworkPolicies de sortie ; des environnements protégés GitLab
-(Premium) pour nommer les approbateurs ; une recherche de secrets dans l'historique
-du dépôt à chaque push.
+(Premium) pour nommer les approbateurs ; la recherche de secrets dans l'historique
+jouée aussi par GitLab, et non par la seule porte locale ; les autres règles de
+`eslint-plugin-sonarjs`, une fois leurs points chauds relus un par un.
 
 ## Alternatives et limites
 

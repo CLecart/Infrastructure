@@ -276,16 +276,16 @@ docker compose down                   # ajouter -v pour effacer aussi les donné
 
 | Service | Recette | Rôle | Port | Mémoire mesurée au repos / limite | Image |
 |---|---|---|---|---|---|
-| `api-gateway` | `repos/api-gateway-app` | point d'entrée : `/api/movies` vers inventory-app, `/api/billing` vers RabbitMQ | 3000, publié sur `127.0.0.1` | 23 Mio / 256 Mio | 121 Mo |
-| `inventory-app` | `repos/inventory-app` | API REST du catalogue de films | 8080 | 22 Mio / 256 Mio | 115 Mo |
+| `api-gateway` | `repos/api-gateway-app` | point d'entrée : `/api/movies` vers inventory-app, `/api/billing` vers RabbitMQ | 3000, publié sur `127.0.0.1` | 25 Mio / 256 Mio | 117 Mo |
+| `inventory-app` | `repos/inventory-app` | API REST du catalogue de films | 8080 | 21 Mio / 256 Mio | 115 Mo |
 | `billing-app` | `repos/billing-app` | consomme les commandes de la file `billing_queue` | 8080 | 22 Mio / 256 Mio | 116 Mo |
-| `inventory-db` | `repos/infra/images/inventory-database` | PostgreSQL 17, table `movies` | 5432 | 22 Mio / 384 Mio | 73 Mo |
-| `billing-db` | `repos/infra/images/billing-database` | PostgreSQL 17, table `orders` | 5432 | 25 Mio / 384 Mio | 73 Mo |
+| `inventory-db` | `repos/infra/images/inventory-database` | PostgreSQL 17, table `movies` | 5432 | 28 Mio / 384 Mio | 73 Mo |
+| `billing-db` | `repos/infra/images/billing-database` | PostgreSQL 17, table `orders` | 5432 | 23 Mio / 384 Mio | 73 Mo |
 | `rabbitmq` | `repos/infra/images/rabbitmq-server` | courtier AMQP, file durable `billing_queue` | 5672 | 92 Mio / 512 Mio | 204 Mo |
 
 Mesures du 17 novembre 2026 sur le poste de développement (`docker stats`,
 `docker image ls`), journaux dans le dossier local `preuves/` (ignoré par Git) :
-205 Mio de mémoire pour toute la pile au repos ; construction sans cache en 9 s,
+211 Mio de mémoire pour toute la pile au repos ; construction sans cache en 10 s,
 l'image de base Alpine déjà présente ; démarrage jusqu'à l'état sain des six
 services en 17 s.
 
@@ -484,16 +484,22 @@ par le même module et son plan.
 |---|---|---|
 | Socle : réseau d'outillage, GitLab, runner, ECR, état Terraform, OIDC, IAM | `terraform -chdir=bootstrap plan`, puis `apply` du plan relu | 54 ressources en 59 s |
 | Clés SSH des deux machines, vérifiées contre la console EC2 | `Scripts/trust-hosts.sh`, juste après l'apply (cloud-init n'y écrit les clés qu'au premier démarrage) | les deux clés concordent ; une clé étrangère est refusée |
-| GitLab, comptes, projets, runners | `Scripts/init-secrets.sh` (une seule fois), `Scripts/make-hosts.sh`, `ansible-playbook site.yml` | 9 min 23 ; relancé : `changed=0` sur les 3 hôtes en 40 s |
+| GitLab, comptes, projets, runners | `Scripts/init-secrets.sh` (une seule fois), `Scripts/make-hosts.sh`, `ansible-playbook site.yml` | 9 min 49 ; relancé : `changed=0` sur les 3 hôtes en 40 s |
 | Publication de l'infrastructure | `Scripts/repos.sh push infra renovate`, puis `ansible-playbook site.yml --limit localhost` (programmation de Renovate) | premier push dans des projets vides, puis « already up to date » |
-| Staging : réseau, EKS, ALB, API Gateway, Cognito, plateforme | pipeline `infra` (lancé par le push) | 18 min, dont `apply-staging` 11 min 53 (88 ressources) et la plateforme 1 min 49 |
-| Applications | `Scripts/repos.sh push inventory-app billing-app api-gateway-app` | 2 min 13 à 3 min 40 par pipeline, du push au déploiement en staging |
+| Staging : réseau, EKS, ALB, API Gateway, Cognito, plateforme | pipeline `infra` (lancé par le push) | 17 min 30, dont `apply-staging` 11 min 12 (88 ressources) et la plateforme 1 min 47 |
+| Applications | `Scripts/repos.sh push inventory-app billing-app api-gateway-app` | 2 min 26 à 3 min 03 par pipeline, du push au déploiement en staging |
 | Fin de séance | `Scripts/teardown.sh` | voir ci-dessous |
 
 Le plan de staging se lit **avant** le push : le pipeline enchaîne `plan` et
 `apply` sans pause sur staging (seule la prod attend une approbation). Il se
 calcule depuis le poste sur une copie du code, avec le backend S3 du pipeline ;
 celui du pipeline s'est révélé identique, ressource par ressource (88).
+Sur un staging déjà construit, le plan du poste cesse d'être fidèle : l'entrée
+d'accès `cluster_creator` d'EKS suit l'identité qui lance Terraform
+(l'administrateur sur le poste, le rôle `movies-ci-infra` dans le pipeline), et le
+poste en propose le remplacement. Seul le plan du pipeline fait foi : une
+publication qui ne touche pas `terraform/` y lit « No changes » (mesuré :
+pipeline n° 6, apply 0/0/0).
 
 **Fin de séance** (`Scripts/teardown.sh`) : pipeline `infra` avec
 `DESTROY=true` (retrait de la plateforme, puis destruction de staging), puis
@@ -502,7 +508,7 @@ des 17 régions. L'inventaire sort en échec s'il reste quoi que ce soit, outill
 compris. Si GitLab ne peut pas détruire staging, le script s'arrête avant le
 socle : GitLab reste là pour relancer le job.
 
-Mesuré le 17 novembre 2026 : 17 min 06 en tout (pipeline n° 8, puis 54
+Mesuré le 17 novembre 2026 : 16 min 34 en tout (pipeline n° 7, puis 54
 ressources du socle détruites conformément à son plan) ; l'inventaire répond
 « OK: nothing billable is left in the 17 Regions », et rien d'autre ne reste,
 facturé ou non (VPC, rôles et politiques IAM, fournisseur OIDC, Cognito, API,
@@ -519,6 +525,7 @@ groupes de sécurité, instantanés) : seul le VPC par défaut d'AWS demeure.
 | Services | api-gateway et inventory-app : Deployment, 2 à 5 réplicas (HPA à 60 % du processeur réservé), budget de perturbation ; billing-app : StatefulSet à une copie ; bases et RabbitMQ : StatefulSet à une copie, disque gp3 chiffré de 1 Gio | 8 pods prêts, images tirées par leur empreinte |
 | Ressources | `requests` et `limits` sur chaque conteneur ; quota interdisant tout service `LoadBalancer` | 4 % de processeur et 38 à 58 % de mémoire par nœud au repos |
 | Isolation | NetworkPolicies (section 7) | 6 politiques actives |
+| Mémoire de RabbitMQ | `memory.conf` lui fixe 512 Mio de mémoire, sa limite : sans ce réglage, il dimensionne son alarme sur la RAM du nœud | alarme à 307,2 Mio ; sans le réglage, 2,24 Gio sur un `c7i-flex.large`, plus de quatre fois la limite où le noyau tue le conteneur (pod jetable du même gabarit) |
 
 **Montée en charge des services** (`Scripts/load-test.sh pods`, 16 boucles de
 requêtes vers `/api/movies/` pendant 3 minutes, depuis le cluster) :
@@ -590,13 +597,18 @@ séance. Protections : plan gratuit (aucun débit de carte), budget mensuel de
 | Dépôt GitLab | Pipeline | Mesuré le 17 novembre |
 |---|---|---|
 | `infra` | images → init → validate (`validate`, `tflint`, `iac-scan`) → plan (staging, prod) → apply-staging (+ plateforme) → approbation → apply-production | n° 1 : tout réussi jusqu'à staging ; la prod attend une approbation qui n'est jamais donnée |
-| `inventory-app`, `billing-app`, `api-gateway-app` | build → test (unitaires, intégration) → scan (SAST, `sast-gate`, Trivy, hadolint, ESLint) → containerization → deploy-staging → approbation → deploy-production | n° 3, 4, 5 : 10 jobs réussis chacun ; 40, 39 et 22 tests unitaires |
+| `inventory-app`, `billing-app`, `api-gateway-app` | build → test (unitaires, intégration) → scan (SAST, `sast-gate`, Trivy, hadolint, ESLint) → containerization → deploy-staging → approbation → deploy-production | n° 3, 4, 5 : 10 jobs réussis chacun ; 40, 39 et 23 tests unitaires |
 | `renovate` | programmation chaque jour ouvré à 7 h ; `validate-config` à chaque push | programmation créée |
 
 - **Terraform** : un module `environment`, appelé par `envs/staging` et
   `envs/prod` (seuls le nom et la plage réseau changent), états séparés dans S3
   avec verrou, versions figées ; plan enregistré par le pipeline et appliqué tel
   quel. Socle à part (`bootstrap/`), lancé depuis le poste.
+- **Jobs sobres** : `build` n'installe que les dépendances de production, comme
+  l'image, et les tests unitaires et d'intégration tournent sur cet artefact
+  (5 à 9 Mo au lieu de 19 à 23) ; seul `lint` installe ESLint et
+  `eslint-plugin-sonarjs`, qui refuse toute fonction d'une complexité cognitive
+  supérieure à 15.
 - **Déclenchement limité** : `main` protégée ; les jobs qui touchent AWS et les
   variables ne tournent que sur `main` ; chaque job échange son jeton OIDC contre
   le rôle IAM de **son** projet, sans clé stockée.
@@ -660,7 +672,7 @@ depuis lui. Chaque ligne nomme sa preuve.
 |---|---|
 | Dépendances et secrets du code (Trivy, bloquant HIGH et CRITICAL) | 3 pipelines réussis ; porte locale réussie |
 | Code (SAST Semgrep, `sast-gate` bloquant High et Critical) | 3 pipelines réussis |
-| Images (scan ECR à l'envoi) | 6 images scannées, aucune vulnérabilité signalée |
+| Images (Trivy avant l'envoi des 3 images d'application, bloquant HIGH et CRITICAL ; scan ECR à l'envoi des 6) | Trivy : les 3 images de la troisième séance passent (`containerization`) ; ECR : aucune vulnérabilité signalée sur les 6 images de la seconde séance, relevé non refait à la troisième |
 | Configuration Terraform (Trivy `config`, bloquant HIGH et CRITICAL) | `iac-scan` réussi ; 4 exceptions motivées dans `repos/infra/.trivyignore.yaml` : trafic sortant des nœuds (AWS-0104), HTTP vers l'ALB interne joignable par le seul lien VPC (AWS-0054), API EKS publique limitée à deux plages (AWS-0040), pas de clé KMS dédiée (AWS-0039) |
 | Recettes Docker (hadolint), scripts (shellcheck) | porte locale réussie, aucune directive de silence |
 | Versions | images tirées par leur empreinte, y compris les 14 que rendent les charts Helm (étape `helm-images-pinned`) ; outils et fournisseurs figés, Renovate chaque jour ouvré ; Docker figé sur le poste et le runner, à la version de la ligne Pile |
@@ -753,3 +765,7 @@ Non exécutés : `semgrep-sast` et `sast-gate` (modèle de GitLab), `integration
 | `teardown.sh` : `destroy-staging … is failed` | échec du job de destruction dans GitLab | relancer le job (**Retry**, il recalcule son plan), puis relancer le script : il s'est arrêté avant le socle, GitLab est toujours là |
 | `Error acquiring the state lock` | un job interrompu a laissé le verrou de l'état | vérifier qu'aucun pipeline ne tourne, puis `terraform force-unlock <ID>` depuis le poste après un `init` sur le bucket d'état ; procédure héritée du socle, non rencontrée sur ce projet |
 | `docker version` sur le runner : `permission denied … docker.sock` | l'utilisateur `ubuntu` n'est pas dans le groupe `docker` | `sudo docker …` : seul le runner utilise la socket |
+| `kubectl` vise encore le cluster d'une séance précédente | le contexte `movies-staging` garde le point d'accès du cluster détruit | `aws eks update-kubeconfig --name movies-staging --region eu-west-3 --alias movies-staging` (`test-api.sh` le fait lui-même) |
+| Plan de staging du poste : `aws_eks_access_entry.this["cluster_creator"] must be replaced` | l'entrée suit l'identité qui lance Terraform : le rôle de la CI l'a créée, le poste planifie en administrateur | ne rien appliquer depuis le poste ; lire le plan du job `plan-staging` |
+| `inventory.sh` : décompte faux (50, 50… au lieu du total) sur une liste de plusieurs pages | en sortie texte, l'AWS CLI applique `--query` page par page | corrigé : sortie JSON, qui joint toutes les pages avant la requête |
+| Tests d'intégration : `Invalid DB_PORT: expected a TCP port, got "NaN"` | Docker antérieur à 29 met `<ALIAS>_PORT=tcp://<ip>:<port>` dans un job lié à un service | corrigé : les tests lisent `INTEGRATION_POSTGRES_*` et `INTEGRATION_RABBITMQ_*` |
