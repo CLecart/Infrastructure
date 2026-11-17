@@ -1,8 +1,10 @@
 # Infrastructure — Construction d'une infrastructure moderne, du réseau à la supervision
 
-**Auteur :** `clecart` — **Filière :** Master · Green IT — **Pile (héritée de code-keeper, à compléter) :** Docker 29.10.0 · Docker Compose 5.7.1 · GitLab CE 19.5.1 · GitLab Runner 19.5.0 ·
-Ansible 2.21.5 · Terraform 1.16.6 (fournisseur AWS 6.69.1, modules VPC 6.7.3 et EKS 21.29.0) ·
-Amazon EKS 1.36 · Helm · kube-prometheus-stack · Trivy 0.76.1 · TFLint 0.64.0 · Renovate 44.176.2 · Node.js 24
+**Auteur :** `clecart` — **Filière :** Master · Green IT — **Pile :** Docker 29.10.0 · Docker Compose 5.7.1 ·
+GitLab CE 19.5.1 · GitLab Runner 19.5.0 · Ansible 2.21.5 (collection `community.crypto` 3.5.1) ·
+Terraform 1.16.6 (fournisseur AWS 6.69.1, modules VPC 6.7.3 et EKS 21.29.0) · AWS CLI 2.38.2 ·
+Amazon EKS 1.36 · kubectl 1.36.4 · Helm 4.3.1 (charts kube-prometheus-stack 92.11.0, fluent-bit 0.58.3,
+cluster-autoscaler 9.59.0) · Trivy 0.76.1 · TFLint 0.64.0 · Renovate 44.176.2 · Node.js 24
 
 Ce document est à la fois le **compte-rendu** du projet et sa **documentation
 complète**. Il reprend d'abord le sujet officiel, puis suit l'avancement des
@@ -21,15 +23,19 @@ soutenance est dans [REVISION-AUDIT.md](REVISION-AUDIT.md).
 1. [Sujet](#1-sujet)
 2. [Suivi des livrables](#2-suivi-des-livrables)
 3. [Origine du code](#3-origine-du-code)
-4. [Application conteneurisée : Docker Compose](#4-application-conteneurisée--docker-compose)
-5. [Architecture réseau](#5-architecture-réseau)
-6. [Une séance sur AWS, de la création à la destruction](#6-une-séance-sur-aws-de-la-création-à-la-destruction)
-7. [Orchestration sur Kubernetes (EKS)](#7-orchestration-sur-kubernetes-eks)
-8. [Coûts de l'infrastructure](#8-coûts-de-linfrastructure)
-9. [CI/CD et infrastructure par Terraform](#9-cicd-et-infrastructure-par-terraform)
-10. [Supervision](#10-supervision)
-11. [Rapport d'audit de sécurité](#11-rapport-daudit-de-sécurité)
-12. [Vérifier avant de pousser : la porte locale](#12-vérifier-avant-de-pousser--la-porte-locale)
+4. [Prérequis](#4-prérequis)
+5. [Organisation du dépôt](#5-organisation-du-dépôt)
+6. [Application conteneurisée : Docker Compose](#6-application-conteneurisée--docker-compose)
+7. [Architecture réseau](#7-architecture-réseau)
+8. [Une séance sur AWS, de la création à la destruction](#8-une-séance-sur-aws-de-la-création-à-la-destruction)
+9. [Orchestration sur Kubernetes (EKS)](#9-orchestration-sur-kubernetes-eks)
+10. [Coûts de l'infrastructure](#10-coûts-de-linfrastructure)
+11. [CI/CD et infrastructure par Terraform](#11-cicd-et-infrastructure-par-terraform)
+12. [Supervision](#12-supervision)
+13. [Rapport d'audit de sécurité](#13-rapport-daudit-de-sécurité)
+14. [Vérifier avant de pousser : la porte locale](#14-vérifier-avant-de-pousser--la-porte-locale)
+15. [Choix techniques et alternatives](#15-choix-techniques-et-alternatives)
+16. [Dépannage](#16-dépannage)
 
 ---
 
@@ -126,15 +132,15 @@ Une soutenance technique devant jury professionnel présentant un projet fil rou
 
 | Sous-phase | Livrable | État | Preuve |
 |---|---|---|---|
-| 1 — Réseau & conteneurs | Application conteneurisée fonctionnelle | ☑ | [section 4](#4-application-conteneurisée--docker-compose), `Scripts/compose-test.sh` |
-| 1 — Réseau & conteneurs | Documentation d'architecture réseau | ☑ | [section 5](#5-architecture-réseau) : local et staging mesurés le 17 novembre (`Scripts/compose-test.sh`, captures AWS et Kubernetes) |
-| 2 — Orchestration & cloud | Application orchestrée sur cluster Kubernetes | ☑ | [section 7](#7-orchestration-sur-kubernetes-eks) : 8 pods, HPA et autoscaler éprouvés (`Scripts/load-test.sh pods` et `nodes`) |
-| 2 — Orchestration & cloud | Déploiement sur AWS | ☑ | [section 6](#6-une-séance-sur-aws-de-la-création-à-la-destruction) : staging construit le 17 novembre ; `Scripts/test-api.sh staging` 16/16 par l'URL publique |
-| 2 — Orchestration & cloud | Analyse des coûts d'infrastructure | ◐ | [section 8](#8-coûts-de-linfrastructure) : tarifs relevés dans l'API de prix d'AWS ; facture réelle de la séance à lire dans Cost Explorer |
-| 3 — CI/CD & IaC | Pipeline CI/CD complet fonctionnel | ☑ | [section 9](#9-cicd-et-infrastructure-par-terraform) : pipelines `infra` n° 1 et applications n° 3, 4, 5 ; `Scripts/protection-test.sh` 9/9 |
-| 3 — CI/CD & IaC | Infrastructure provisionnée via Terraform | ☑ | [sections 6 et 9](#6-une-séance-sur-aws-de-la-création-à-la-destruction) : socle 54 ressources, staging 88, plans relus avant l'apply, destruction complète |
-| 4 — Supervision & sécurité | Tableau de bord de supervision opérationnel | ☑ | [section 10](#10-supervision) : Grafana capturé pendant la montée en charge ; journaux dans CloudWatch |
-| 4 — Supervision & sécurité | Rapport d'audit de sécurité | ☑ | [section 11](#11-rapport-daudit-de-sécurité) : secrets, moindre privilège (`rbac-test.sh` 118/118), vulnérabilités (ECR, Trivy, SAST) |
+| 1 — Réseau & conteneurs | Application conteneurisée fonctionnelle | ☑ | [section 6](#6-application-conteneurisée--docker-compose), `Scripts/compose-test.sh` |
+| 1 — Réseau & conteneurs | Documentation d'architecture réseau | ☑ | [section 7](#7-architecture-réseau) : local et staging mesurés le 17 novembre (`Scripts/compose-test.sh`, captures AWS et Kubernetes) |
+| 2 — Orchestration & cloud | Application orchestrée sur cluster Kubernetes | ☑ | [section 9](#9-orchestration-sur-kubernetes-eks) : 8 pods, HPA et autoscaler éprouvés (`Scripts/load-test.sh pods` et `nodes`) |
+| 2 — Orchestration & cloud | Déploiement sur AWS | ☑ | [section 8](#8-une-séance-sur-aws-de-la-création-à-la-destruction) : staging construit le 17 novembre ; `Scripts/test-api.sh staging` 16/16 par l'URL publique |
+| 2 — Orchestration & cloud | Analyse des coûts d'infrastructure | ◐ | [section 10](#10-coûts-de-linfrastructure) : tarifs relevés dans l'API de prix d'AWS ; facture réelle de la séance à lire dans Cost Explorer |
+| 3 — CI/CD & IaC | Pipeline CI/CD complet fonctionnel | ☑ | [section 11](#11-cicd-et-infrastructure-par-terraform) : pipelines `infra` n° 1 et applications n° 3, 4, 5 ; `Scripts/protection-test.sh` 9/9 |
+| 3 — CI/CD & IaC | Infrastructure provisionnée via Terraform | ☑ | [sections 8 et 11](#8-une-séance-sur-aws-de-la-création-à-la-destruction) : socle 54 ressources, staging 88, plans relus avant l'apply, destruction complète |
+| 4 — Supervision & sécurité | Tableau de bord de supervision opérationnel | ☑ | [section 12](#12-supervision) : Grafana capturé pendant la montée en charge ; journaux dans CloudWatch |
+| 4 — Supervision & sécurité | Rapport d'audit de sécurité | ☑ | [section 13](#13-rapport-daudit-de-sécurité) : secrets, moindre privilège (`rbac-test.sh` 118/118), vulnérabilités (ECR, Trivy, SAST) |
 | Validation finale | Soutenance technique devant jury (projet fil rouge) | ☐ | préparation : [REVISION-AUDIT.md](REVISION-AUDIT.md) |
 
 ---
@@ -170,7 +176,90 @@ références pour certaines sous-phases :
 
 ---
 
-## 4. Application conteneurisée : Docker Compose
+## 4. Prérequis
+
+**Compte AWS** : plan gratuit (aucun débit de carte ; le compte se ferme quand
+les crédits sont épuisés), un utilisateur IAM d'administration dans
+`~/.aws/credentials`, région `eu-west-3`. Il ne sert qu'au socle, au playbook
+Ansible et aux scripts : les pipelines n'ont aucune clé (OIDC). Un budget
+mensuel de 10 $ prévient par e-mail à 50 % et 100 %.
+
+**Outils du poste**, aux versions de la ligne **Pile** en tête de ce document
+(mesurées sur le poste le 17 novembre 2026) :
+
+| Outil | Rôle |
+|---|---|
+| Terraform | socle (`bootstrap/`) ; plan de staging relu avant le push |
+| Ansible et sa collection `community.crypto` | GitLab, ses comptes, ses projets, le runner |
+| AWS CLI | scripts, vérifications, inventaire |
+| kubectl, Helm | vérifications et démonstrations sur le cluster |
+| Docker, Docker Compose | application locale ; outils de la porte, dans leurs images épinglées |
+| jq, rsync, git, ssh, curl | scripts |
+
+**Accès** :
+
+- `~/.ssh/movies` : clé des machines GitLab et runner (`ssh-keygen -t ed25519 -N "" -f ~/.ssh/movies`).
+- `~/.ssh/id_ed25519.pub` : clé personnelle, ajoutée par Ansible au compte GitLab
+  `clecart` pour publier les dépôts.
+- `bootstrap/terraform.tfvars` (ignoré par Git), à partir du modèle : l'IP
+  publique du poste (`curl -s https://checkip.amazonaws.com`) en `/32`. GitLab, le
+  SSH et l'API EKS ne sont ouverts qu'à elle et au runner ; `0.0.0.0/0` est
+  refusé par la validation des variables.
+- `.env` (ignoré par Git), à partir de `.env.example`, pour l'application locale.
+
+---
+
+## 5. Organisation du dépôt
+
+```text
+Infrastructure/
+├── README.md, REVISION-AUDIT.md      compte-rendu et documentation ; préparation de l'évaluation
+├── .agents/MANIFESTE.md              règles du projet et gardes qui les tiennent
+├── compose.yaml, .env.example        application locale (Docker Compose)
+├── bootstrap/                        socle Terraform, lancé depuis le poste : réseau d'outillage,
+│                                     GitLab et runner (EC2), ECR, état S3, OIDC, rôles IAM
+├── ansible/                          site.yml et 6 rôles : pki, common, gitlab, gitlab_oidc,
+│                                     gitlab_projects, gitlab_runner
+├── repos/                            contenu des 5 dépôts GitLab, publié par Scripts/repos.sh
+│   ├── inventory-app/                code Node.js, tests, Dockerfile, k8s/, .gitlab-ci.yml
+│   ├── billing-app/                  idem
+│   ├── api-gateway-app/              idem
+│   ├── infra/                        terraform/ (module environment, envs/staging, envs/prod),
+│   │                                 platform/ (manifestes, valeurs Helm), images/ (bases, RabbitMQ),
+│   │                                 scripts/, .gitlab-ci.yml
+│   └── renovate/                     programmation et réglages communs de Renovate
+├── Scripts/                          scripts d'exploitation (ci-dessous)
+└── docs/
+    ├── images/                       capture du tableau de bord Grafana
+    └── import/code-keeper/           compte-rendu d'origine du socle, gardé tel quel
+```
+
+Ignorés par Git : états Terraform, `*.tfvars`, coffre Ansible et inventaire
+généré, `.env`, mot de passe de l'utilisateur de test Cognito, dossier local
+`preuves/` (journaux bruts des séances, avec l'identifiant du compte et les
+adresses).
+
+| Script | Rôle |
+|---|---|
+| `Scripts/ci-gate.sh` | porte locale, avant tout commit et tout push (section 14) |
+| `Scripts/compose-test.sh` | vérifie l'application locale : 92 contrôles (section 6) |
+| `Scripts/init-secrets.sh` | crée une fois le mot de passe du coffre Ansible et le coffre chiffré |
+| `Scripts/make-hosts.sh` | écrit l'inventaire Ansible à partir des sorties du socle |
+| `Scripts/trust-hosts.sh` | inscrit les clés SSH des machines neuves après comparaison avec la console EC2 |
+| `Scripts/repos.sh push\|pull [dépôt…]` | publie le contenu commité de `repos/<dépôt>` sur `main` de GitLab (premier push compris), ou le ramène |
+| `Scripts/api-token.sh staging\|prod` | jeton Cognito de l'utilisateur de test `auditor` |
+| `Scripts/test-api.sh staging\|prod` | scénario de bout en bout par l'URL publique : 16 contrôles |
+| `Scripts/load-test.sh pods\|nodes` | montée en charge des services, ou demande de capacité pour l'autoscaler de nœuds |
+| `Scripts/rbac-test.sh staging\|prod` | droits Kubernetes des pipelines d'applications : 118 contrôles |
+| `Scripts/protection-test.sh` | protections GitLab vues par le compte `developer` : 9 contrôles |
+| `Scripts/zero-downtime-test.sh` | requêtes continues pendant un remplacement de pods ou la vidange d'un nœud ; hérité du socle, **non lancé sur ce projet** |
+| `Scripts/teardown.sh` | fin de séance : staging, puis socle, puis inventaire (section 8) |
+| `Scripts/inventory.sh` | ressources facturables dans les 17 régions ; échec s'il reste quoi que ce soit |
+| `repos/infra/scripts/grafana.sh staging\|prod` | Grafana sur `http://localhost:3001` par port-forward |
+
+---
+
+## 6. Application conteneurisée : Docker Compose
 
 `compose.yaml` lance l'application entière sur le poste, à partir des recettes
 du dépôt : les images qui tournent en local sont celles que la CI construit et
@@ -229,15 +318,15 @@ l'entrée (publiée sur la seule boucle locale), le catalogue (création puis
 recherche d'un film), la facturation (la commande arrive dans `billing-db`),
 la file d'attente (`billing-app` arrêté, la commande attend dans RabbitMQ puis
 s'enregistre à son retour), l'isolement réseau sur les 30 couples de services
-(section 5) et le durcissement de chaque conteneur. Le test a été éprouvé à
+(section 7) et le durcissement de chaque conteneur. Le test a été éprouvé à
 l'envers : `billing-app` ajouté au réseau de publication fait tomber deux
 vérifications, `read_only: false` sur une base en fait tomber une.
 
 ---
 
-## 5. Architecture réseau
+## 7. Architecture réseau
 
-### 5.1 Circulation d'une requête
+### 7.1 Circulation d'une requête
 
 | Flux | De | Vers | Protocole, port |
 |---|---|---|---|
@@ -253,7 +342,7 @@ La commande est asynchrone : `api-gateway` répond dès que RabbitMQ a reçu le
 message, et la commande attend dans la file durable tant que `billing-app` est
 arrêté.
 
-### 5.2 En local : un réseau par flux
+### 7.2 En local : un réseau par flux
 
 ```mermaid
 flowchart LR
@@ -298,7 +387,7 @@ ports, là où une NetworkPolicy filtre par sens et par port. En local,
 `inventory-db` vers `inventory-app:8080`, `billing-db` vers `billing-app:8080`
 et `rabbitmq` vers `api-gateway:3000` ; le cluster refuse ces quatre sens.
 
-### 5.3 Sur AWS
+### 7.3 Sur AWS
 
 Cette partie décrit ce que construit le code Terraform et Kubernetes du dépôt,
 et chaque point a été vérifié le 17 novembre 2026 sur staging, construit par le
@@ -361,7 +450,7 @@ Le groupe par défaut du VPC d'outillage est vidé de ses règles : seuls les
 groupes nommés s'appliquent.
 
 **Dans le cluster** : toute connexion entrante est refusée, puis seuls les
-cinq flux de la section 5.1 sont ouverts, port par port et dans un seul sens
+cinq flux de la section 7.1 sont ouverts, port par port et dans un seul sens
 (`repos/infra/platform/network-policies.yaml`, appliqué par le VPC CNI avec
 `enableNetworkPolicy`).
 
@@ -369,7 +458,7 @@ cinq flux de la section 5.1 sont ouverts, port par port et dans un seul sens
 de `eks_api_allowed_cidrs`, dont la validation refuse `0.0.0.0/0` ; les nœuds
 passent par le point d'accès privé.
 
-### 5.4 Du local au cluster
+### 7.4 Du local au cluster
 
 | Local (Compose) | AWS (EKS) |
 |---|---|
@@ -381,7 +470,7 @@ passent par le point d'accès privé.
 
 ---
 
-## 6. Une séance sur AWS, de la création à la destruction
+## 8. Une séance sur AWS, de la création à la destruction
 
 Rien ne survit à une séance de travail, socle compris : entre deux séances, le
 compte ne coûte rien. Chaque séance crée tout depuis le code, capture ses
@@ -420,7 +509,7 @@ groupes de sécurité, instantanés) : seul le VPC par défaut d'AWS demeure.
 
 ---
 
-## 7. Orchestration sur Kubernetes (EKS)
+## 9. Orchestration sur Kubernetes (EKS)
 
 | Élément | Réglage | Mesuré sur staging |
 |---|---|---|
@@ -428,7 +517,7 @@ groupes de sécurité, instantanés) : seul le VPC par défaut d'AWS demeure.
 | Espaces de noms | `movies` (application, Pod Security `restricted`), `monitoring`, `logging`, `kube-system` | étiquette `pod-security.kubernetes.io/enforce=restricted` relevée sur `movies` |
 | Services | api-gateway et inventory-app : Deployment, 2 à 5 réplicas (HPA à 60 % du processeur réservé), budget de perturbation ; billing-app : StatefulSet à une copie ; bases et RabbitMQ : StatefulSet à une copie, disque gp3 chiffré de 1 Gio | 8 pods prêts, images tirées par leur empreinte |
 | Ressources | `requests` et `limits` sur chaque conteneur ; quota interdisant tout service `LoadBalancer` | 4 % de processeur et 38 à 58 % de mémoire par nœud au repos |
-| Isolation | NetworkPolicies (section 5) | 6 politiques actives |
+| Isolation | NetworkPolicies (section 7) | 6 politiques actives |
 
 **Montée en charge des services** (`Scripts/load-test.sh pods`, 16 boucles de
 requêtes vers `/api/movies/` pendant 3 minutes, depuis le cluster) :
@@ -453,7 +542,7 @@ d'inutilité).
 
 ---
 
-## 8. Coûts de l'infrastructure
+## 10. Coûts de l'infrastructure
 
 Tarifs de Paris lus dans l'API de prix d'AWS le 17 novembre 2026 (identiques à
 ceux d'octobre 2026) :
@@ -495,7 +584,7 @@ séance. Protections : plan gratuit (aucun débit de carte), budget mensuel de
 
 ---
 
-## 9. CI/CD et infrastructure par Terraform
+## 11. CI/CD et infrastructure par Terraform
 
 | Dépôt GitLab | Pipeline | Mesuré le 17 novembre |
 |---|---|---|
@@ -517,13 +606,13 @@ séance. Protections : plan gratuit (aucun débit de carte), budget mensuel de
 
 ---
 
-## 10. Supervision
+## 12. Supervision
 
-- **Prometheus et Grafana** (chart `kube-prometheus-stack` 92.11.0, espace
+- **Prometheus et Grafana** (chart `kube-prometheus-stack`, espace
   `monitoring`) : 24 tableaux de bord, accès par
   `repos/infra/scripts/grafana.sh staging` (port-forward, mot de passe aléatoire
   du chart). Grafana n'a aucune adresse publique.
-- **Journaux** : Fluent Bit (chart 0.58.3) envoie les journaux des conteneurs de
+- **Journaux** : Fluent Bit (chart `fluent-bit`) envoie les journaux des conteneurs de
   `movies` dans CloudWatch (`/aws/eks/movies-staging/containers`, un flux par
   pod, gardé un jour) ; API Gateway et le plan de contrôle d'EKS ont leurs propres
   groupes. Vérifié : l'événement `order stored` d'une commande du scénario se
@@ -538,7 +627,7 @@ quota de processeur et la mémoire de chaque pod.
 
 ---
 
-## 11. Rapport d'audit de sécurité
+## 13. Rapport d'audit de sécurité
 
 Audit mené le 17 novembre 2026 sur le code du dépôt et sur staging construit
 depuis lui. Chaque ligne nomme sa preuve.
@@ -560,7 +649,7 @@ depuis lui. Chaque ligne nomme sa preuve.
 | Rôles IAM des pipelines | un rôle par projet, que seul le jeton de **sa** branche `main` peut prendre (`project_path:movies/<projet>:ref_type:branch:ref:main`) |
 | Escalade par le rôle `infra` | limite de permissions imposée à tout rôle qu'il crée ; interdiction explicite sur les ressources du socle (`Stack=bootstrap`) |
 | Droits Kubernetes des pipelines d'applications | un Role par application : `Scripts/rbac-test.sh staging`, 118/118 |
-| Protections GitLab | `Scripts/protection-test.sh`, 9/9 (section 9) |
+| Protections GitLab | `Scripts/protection-test.sh`, 9/9 (section 11) |
 | Conteneurs | non-root, système de fichiers en lecture seule, toutes capacités retirées, sans escalade : relevé sur chaque pod de l'application ; même durcissement sous Compose, vérifié par `Scripts/compose-test.sh` |
 | Réseau | refus par défaut et une NetworkPolicy par flux ; ALB interne joignable par le seul lien VPC ; API publique : jeton Cognito sur `/api/*` (401 sans jeton et avec un jeton forgé), 20 requêtes/s ; API EKS ouverte à 2 plages seulement (l'administration et le runner) ; GitLab ouvert aux seules plages d'administration et au runner (plan appliqué du socle) |
 
@@ -573,17 +662,17 @@ depuis lui. Chaque ligne nomme sa preuve.
 | Images (scan ECR à l'envoi) | 6 images scannées, aucune vulnérabilité signalée |
 | Configuration Terraform (Trivy `config`, bloquant HIGH et CRITICAL) | `iac-scan` réussi ; 4 exceptions motivées dans `repos/infra/.trivyignore.yaml` : trafic sortant des nœuds (AWS-0104), HTTP vers l'ALB interne joignable par le seul lien VPC (AWS-0054), API EKS publique limitée à deux plages (AWS-0040), pas de clé KMS dédiée (AWS-0039) |
 | Recettes Docker (hadolint), scripts (shellcheck) | porte locale réussie, aucune directive de silence |
-| Versions | images tirées par leur empreinte, outils et fournisseurs figés, Renovate chaque jour ouvré ; Docker figé en 29.10.0 sur le poste et le runner |
+| Versions | images tirées par leur empreinte, outils et fournisseurs figés, Renovate chaque jour ouvré ; Docker figé sur le poste et le runner, à la version de la ligne Pile |
 
 **Risques résiduels**, assumés et nommés : une seule passerelle NAT ; les bases,
 RabbitMQ et billing-app à une copie ; une seule instance GitLab ; un réseau
-Compose filtre par appartenance et non par sens (section 5.2) ; l'approbation de
+Compose filtre par appartenance et non par sens (section 7.2) ; l'approbation de
 la prod repose sur le droit de fusionner dans `main` (les environnements
 protégés sont réservés à GitLab Premium).
 
 ---
 
-## 12. Vérifier avant de pousser : la porte locale
+## 14. Vérifier avant de pousser : la porte locale
 
 Les pipelines GitLab ne tournent que dans le GitLab que le projet déploie.
 Avant chaque push, `Scripts/ci-gate.sh` rejoue donc leurs contrôles sur le
@@ -617,3 +706,42 @@ Non rejoués : `semgrep-sast` et `sast-gate` (modèle de GitLab), `integration-t
 (services PostgreSQL et RabbitMQ), et les jobs qui demandent GitLab ou AWS
 (construction des images, `plan`, `apply`, déploiements).
 
+
+---
+
+## 15. Choix techniques et alternatives
+
+| Choix | Pourquoi | Alternative écartée |
+|---|---|---|
+| Images construites depuis les recettes du dépôt, en local comme sur EKS | la pile locale éprouve exactement ce qui part en production | images officielles `postgres` et `rabbitmq` en local (elles restent les services du job `integration-test`) |
+| Un réseau Compose par flux autorisé | mesuré : avec un seul réseau de messagerie, la passerelle et `billing-app` se joignaient, ce que la NetworkPolicy interdit | un réseau commun à tous les services |
+| EKS | les manifestes Kubernetes du socle et leurs NetworkPolicies servent tels quels ; le sujet demande Kubernetes sur AWS | ECS Fargate : toute la configuration à réécrire (cloud-design) |
+| GitLab CE auto-hébergé, installé par Ansible | socle déjà construit et audité (code-keeper) ; instance fermée à Internet ; approbation de la prod par job manuel ; OIDC par projet et par branche | GitHub Actions sur le miroir GitHub : pas de machine à payer (≈ 0,23 $/h de moins par séance), mais tout le CI/CD et ses gardes à réécrire |
+| OIDC, un rôle IAM par projet | aucune clé à voler ; droits liés au projet et à la branche `main` | clés d'accès dans des variables masquées, valables jusqu'à leur rotation |
+| Une seule passerelle NAT | 0,055 $/h de moins (NAT et son IP, API de prix d'AWS) | une NAT par zone : la sortie survit à la perte d'une zone |
+| Machines `c7i-flex.large` (nœuds, runner) et `m7i-flex.large` (GitLab) | les deux plus grands des 8 types autorisés sur le plan gratuit à Paris (mesuré : 4 et 8 Gio de mémoire) | `t3`, `t4g`, `t8i` `micro` et `small`, autorisés mais limités à 1 ou 2 Gio |
+| ALB interne créé par Terraform, NodePort | `terraform destroy` le supprime ; aucun contrôleur à installer | AWS Load Balancer Controller : ses load balancers survivent à la destruction du cluster |
+| API Gateway et Cognito comme seule entrée publique | HTTPS par le certificat géré d'AWS, sans nom de domaine ; jeton exigé sur `/api/*` ; limite de débit | ALB public avec certificat ACM, qui demande un nom de domaine |
+| Bases et RabbitMQ en conteneurs (StatefulSets, disques gp3 chiffrés) | fidèles au schéma de l'application, aucun coût en plus | RDS : sauvegardes et haute disponibilité gérées, plus cher |
+| Prometheus et Grafana dans le cluster | gratuits, accès par port-forward seulement | Amazon Managed Grafana, réservé au plan payant |
+| Trivy, Semgrep, hadolint, TFLint, ESLint | gratuits, sans compte ni quota ; Trivy couvre dépendances, secrets, images et Terraform | Snyk ou SonarQube Cloud (compte, quotas) ; tfsec à part |
+| Renovate auto-hébergé | une demande de fusion testée par mise à jour, chaque jour ouvré | Dependabot, propre à GitHub |
+| Tout détruire en fin de séance, socle compris | 0 $ entre deux séances ; la facture des projets précédents le confirme | éteindre GitLab et le runner : ≈ 13,80 $ par mois de disques et d'IP pour rien |
+| Clés SSH des machines neuves comparées à la console EC2 | aucune confiance accordée à la première connexion | accepter la clé au premier contact |
+| Porte locale qui rejoue la CI | le dépôt Gitea de l'école n'exécute rien ; un défaut se voit avant le push | ne vérifier que dans GitLab, qui n'existe que pendant une séance |
+
+---
+
+## 16. Dépannage
+
+| Symptôme | Cause | Solution |
+|---|---|---|
+| Ansible : `Host key verification failed` sur les deux machines | machines neuves, clés absentes de `known_hosts` | `Scripts/trust-hosts.sh` juste après l'apply du socle, puis le playbook |
+| `trust-hosts.sh` : `cloud-init … has finished without printing its host keys` | la machine a redémarré depuis son premier démarrage (rôle `common` d'Ansible) : la console ne montre plus les clés | les clés déjà inscrites restent valables ; une machine recréée se vérifie avant le premier passage d'Ansible |
+| `repos.sh push` : `Remote branch main not found` | projet GitLab vide (GitLab neuf à chaque séance) ; ancienne version du script | version actuelle : le premier push crée `main` |
+| Compose : `cannot create config … in read-only service` | Compose refuse une configuration écrite en ligne dans un service en lecture seule | taille mémoire de RabbitMQ passée par `RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS` (seuil mesuré : 0,322 Go) |
+| La pile Compose ne tourne plus après un redémarrage du poste | `restart: on-failure` ne relance pas après un arrêt du démon | `docker compose up -d --wait` |
+| `protection-test.sh`, contrôle 3 : `jobs/null` | aucun déploiement de prod sans prod | version actuelle : le dernier déploiement de `main`, staging à défaut |
+| `teardown.sh` : `destroy-staging … is failed` | échec du job de destruction dans GitLab | relancer le job (**Retry**, il recalcule son plan), puis relancer le script : il s'est arrêté avant le socle, GitLab est toujours là |
+| `Error acquiring the state lock` | un job interrompu a laissé le verrou de l'état | vérifier qu'aucun pipeline ne tourne, puis `terraform force-unlock <ID>` depuis le poste après un `init` sur le bucket d'état ; procédure héritée du socle, non rencontrée sur ce projet |
+| `docker version` sur le runner : `permission denied … docker.sock` | l'utilisateur `ubuntu` n'est pas dans le groupe `docker` | `sudo docker …` : seul le runner utilise la socket |

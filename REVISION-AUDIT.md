@@ -26,7 +26,7 @@ le dossier local `preuves/`.
 
 ## Déroulé de la démonstration
 
-Avant l'évaluation : une séance complète ([README §6](README.md#6-une-séance-sur-aws-de-la-création-à-la-destruction)).
+Avant l'évaluation : une séance complète ([README §8](README.md#8-une-séance-sur-aws-de-la-création-à-la-destruction)).
 Durées mesurées le 17 novembre : socle 1 min, Ansible 9 min 23, pipeline `infra`
 18 min, applications environ 6 min, soit environ 35 minutes de création, plus les
 commandes à lancer. Après : `Scripts/teardown.sh`.
@@ -35,10 +35,10 @@ commandes à lancer. Après : `Scripts/teardown.sh`.
 |---|---|
 | Le dépôt et sa documentation | l'arborescence, le README (sujet, suivi des livrables et leurs preuves), le manifeste `.agents/MANIFESTE.md` |
 | L'application conteneurisée | `docker compose up -d --build --wait`, puis `Scripts/compose-test.sh` (92 vérifications) |
-| L'architecture réseau | le schéma de la section 5 ; la matrice des 30 couples de `compose-test.sh` ; sur AWS : `aws ec2 describe-subnets`, `describe-route-tables`, `kubectl get networkpolicy -n movies` |
+| L'architecture réseau | le schéma de la section 7 ; la matrice des 30 couples de `compose-test.sh` ; sur AWS : `aws ec2 describe-subnets`, `describe-route-tables`, `kubectl get networkpolicy -n movies` |
 | L'orchestration et le scaling | `kubectl get pods,hpa,pdb -n movies -o wide` ; `Scripts/load-test.sh pods`, puis `nodes` |
 | Le déploiement sur AWS | `Scripts/test-api.sh staging` (16/16) |
-| Les coûts | README §8 ; `aws freetier get-account-plan-state --region us-east-1` ; Cost Explorer |
+| Les coûts | README §10 ; `aws freetier get-account-plan-state --region us-east-1` ; Cost Explorer |
 | Le pipeline CI/CD | GitLab : pipelines `infra` et applications, leurs jobs ; une modification de code jusqu'à staging |
 | Terraform | le plan relu avant l'apply ; le `diff` de `envs/staging/main.tf` et `envs/prod/main.tf` |
 | La supervision | `repos/infra/scripts/grafana.sh staging`, tableau « Namespace (Pods) » ; journaux dans CloudWatch |
@@ -191,7 +191,7 @@ ouvré. Quatre trouvailles Trivy sont acceptées et motivées, une par une.
 - **Un GitLab neuf à chaque séance** : la publication ne savait pas remplir un
   projet vide ; les clés SSH des machines neuves se vérifient contre la console EC2.
 - **Une version non figée** : Docker du runner s'installait à la dernière version ;
-  figé en 29.10.0 sur le runner et le poste.
+  figé sur le runner et le poste, à la version de la ligne Pile du README.
 
 #### 15. Quelle sobriété (Green IT) ?
 Images minimales et mesurées, aucune dépendance de développement servie ; rien ne
