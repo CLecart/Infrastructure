@@ -253,7 +253,7 @@ adresses).
 | `Scripts/load-test.sh pods\|nodes` | montée en charge des services, ou demande de capacité pour l'autoscaler de nœuds |
 | `Scripts/rbac-test.sh staging\|prod` | droits Kubernetes des pipelines d'applications : 118 contrôles |
 | `Scripts/protection-test.sh` | protections GitLab vues par le compte `developer` : 9 contrôles |
-| `Scripts/zero-downtime-test.sh` | requêtes continues pendant un remplacement de pods ou la vidange d'un nœud ; hérité du socle, **non lancé sur ce projet** |
+| `Scripts/zero-downtime-test.sh` | requêtes continues pendant un remplacement de pods ou la vidange d'un nœud ; mesuré sur staging le 17 novembre : 126/126 et 124/124 requêtes en HTTP 200 pendant le remplacement des pods d'api-gateway et d'inventory-app, 131/131 pendant la vidange d'un nœud |
 | `Scripts/teardown.sh` | fin de séance : staging, puis socle, puis inventaire (section 8) |
 | `Scripts/inventory.sh` | ressources facturables dans les 17 régions ; échec s'il reste quoi que ce soit |
 | `repos/infra/scripts/grafana.sh staging\|prod` | Grafana sur `http://localhost:3001` par port-forward |
@@ -515,7 +515,7 @@ groupes de sécurité, instantanés) : seul le VPC par défaut d'AWS demeure.
 | Élément | Réglage | Mesuré sur staging |
 |---|---|---|
 | Cluster | EKS 1.36, 2 à 3 nœuds `c7i-flex.large` sur 2 zones | 2 nœuds prêts, `v1.36.5` |
-| Espaces de noms | `movies` (application, Pod Security `restricted`), `monitoring`, `logging`, `kube-system` | étiquette `pod-security.kubernetes.io/enforce=restricted` relevée sur `movies` |
+| Espaces de noms | `movies` (application, Pod Security `restricted`), `monitoring`, `logging`, `kube-system` | pod privilégié refusé dans `movies` (`violates PodSecurity "restricted:v1.36"`, 5 manquements nommés), accepté dans `default` (témoin) ; essai par `--dry-run=server`, rien créé |
 | Services | api-gateway et inventory-app : Deployment, 2 à 5 réplicas (HPA à 60 % du processeur réservé), budget de perturbation ; billing-app : StatefulSet à une copie ; bases et RabbitMQ : StatefulSet à une copie, disque gp3 chiffré de 1 Gio | 8 pods prêts, images tirées par leur empreinte |
 | Ressources | `requests` et `limits` sur chaque conteneur ; quota interdisant tout service `LoadBalancer` | 4 % de processeur et 38 à 58 % de mémoire par nœud au repos |
 | Isolation | NetworkPolicies (section 7) | 6 politiques actives |
@@ -651,7 +651,7 @@ depuis lui. Chaque ligne nomme sa preuve.
 | Escalade par le rôle `infra` | limite de permissions imposée à tout rôle qu'il crée ; interdiction explicite sur les ressources du socle (`Stack=bootstrap`) |
 | Droits Kubernetes des pipelines d'applications | un Role par application : `Scripts/rbac-test.sh staging`, 118/118 |
 | Protections GitLab | `Scripts/protection-test.sh`, 9/9 (section 11) |
-| Conteneurs | non-root, système de fichiers en lecture seule, toutes capacités retirées, sans escalade : relevé sur chaque pod de l'application ; même durcissement sous Compose, vérifié par `Scripts/compose-test.sh` |
+| Conteneurs | non-root, système de fichiers en lecture seule, toutes capacités retirées, sans escalade : relevé sur chaque pod de l'application ; même durcissement sous Compose, vérifié par `Scripts/compose-test.sh` ; Pod Security `restricted` refuse un pod privilégié dans `movies` (mesuré) |
 | Réseau | refus par défaut et une NetworkPolicy par flux ; ALB interne joignable par le seul lien VPC ; API publique : jeton Cognito sur `/api/*` (401 sans jeton et avec un jeton forgé), 20 requêtes/s ; API EKS ouverte à 2 plages seulement (l'administration et le runner) ; GitLab ouvert aux seules plages d'administration et au runner (plan appliqué du socle) |
 
 **Vulnérabilités**
@@ -691,7 +691,7 @@ Scripts/ci-gate.sh && git push
 |---|---|
 | `no-silencing-directive` | aucune directive qui fait taire un outil |
 | `every-image-pinned` | chaque image tirée par son empreinte (recettes, CI, scripts, valeurs Helm) |
-| `helm-images-pinned` | chaque image que rendent les charts Helm (`helm template`, versions de `deploy-platform.sh`), argument de l'opérateur compris |
+| `helm-images-pinned` | chaque image que rendent les charts Helm (`helm template`, versions de `deploy-platform.sh`), argument de l'opérateur compris : référence entière bien formée, empreinte en fin ; aucun champ `version:` qui en contienne une |
 | `shellcheck` | chaque script shell |
 | `hadolint` | chaque recette Docker, images des bases comprises |
 | `terraform-bootstrap` | `fmt -check` et `validate` du socle, qu'aucun pipeline ne lance |
@@ -732,7 +732,7 @@ Non exécutés : `semgrep-sast` et `sast-gate` (modèle de GitLab), `integration
 | Renovate auto-hébergé | une demande de fusion testée par mise à jour, chaque jour ouvré | Dependabot, propre à GitHub |
 | Tout détruire en fin de séance, socle compris | 0 $ entre deux séances ; la facture des projets précédents le confirme | éteindre GitLab et le runner : ≈ 13,80 $ par mois de disques et d'IP pour rien |
 | Clés SSH des machines neuves comparées à la console EC2 | aucune confiance accordée à la première connexion | accepter la clé au premier contact |
-| Outils des jobs de CI : image AWS CLI par empreinte (jq compris), kubectl, Helm, client Docker et buildx vérifiés par leur SHA-256, git par `dnf` verrouillé sur la version de l'image | mesuré : `apk add` sans version donnait Helm 3.19.0, kubectl 1.36.1 et AWS CLI 2.34.63, et les jobs Docker tournaient sur un client 29.9.2, au lieu des versions de la ligne Pile ; l'installation figée, éprouvée dans l'image (socket Docker du poste comprise), donne les versions exactes et refuse une archive dont la somme diffère | `apk add` sans version ; une image d'outils construite par le projet, à entretenir |
+| Outils des jobs de CI : image AWS CLI par empreinte (jq compris), kubectl, Helm, client Docker et buildx vérifiés par leur SHA-256, git par `dnf` verrouillé sur la version de l'image | mesuré : `apk add` sans version donnait Helm 3.19.0, kubectl 1.36.1 et AWS CLI 2.34.63, et les jobs Docker tournaient sur un client 29.9.2, au lieu des versions de la ligne Pile ; l'installation figée, éprouvée dans l'image (socket Docker du poste comprise), donne les versions exactes et refuse une archive dont la somme diffère ; puis tous les jobs concernés ont réussi en pipeline (seconde séance du 17 novembre : `infra` n° 3, applications n° 4, 5, 6) | `apk add` sans version ; une image d'outils construite par le projet, à entretenir |
 | Porte locale qui rejoue la CI | le dépôt Gitea de l'école n'exécute rien ; un défaut se voit avant le push | ne vérifier que dans GitLab, qui n'existe que pendant une séance |
 
 ---
@@ -742,6 +742,7 @@ Non exécutés : `semgrep-sast` et `sast-gate` (modèle de GitLab), `integration
 | Symptôme | Cause | Solution |
 |---|---|---|
 | Ansible : `Host key verification failed` sur les deux machines | machines neuves, clés absentes de `known_hosts` | `Scripts/trust-hosts.sh` juste après l'apply du socle, puis le playbook |
+| Pods `InvalidImageName` (node-exporter), Prometheus jamais créé (« failed to parse Prometheus version ») | empreinte écrite dans l'étiquette : le chart de node-exporter ajoute `-distroless` après elle, l'opérateur lit la version dans l'étiquette | empreinte dans le champ du chart (`image.digest`, `prometheusSpec.image.sha`) ; la porte refuse désormais une référence mal formée |
 | `trust-hosts.sh` : `cloud-init … has finished without printing its host keys` | la machine a redémarré depuis son premier démarrage (rôle `common` d'Ansible) : la console ne montre plus les clés | les clés déjà inscrites restent valables ; une machine recréée se vérifie avant le premier passage d'Ansible |
 | `repos.sh push` : `Remote branch main not found` | projet GitLab vide (GitLab neuf à chaque séance) ; ancienne version du script | version actuelle : le premier push crée `main` |
 | Compose : `cannot create config … in read-only service` | Compose refuse une configuration écrite en ligne dans un service en lecture seule | taille mémoire de RabbitMQ passée par `RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS` (seuil mesuré : 0,322 Go) |

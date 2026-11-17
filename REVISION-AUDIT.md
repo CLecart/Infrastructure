@@ -22,7 +22,8 @@ le dossier local `preuves/`.
 | Tests | 101 tests unitaires (40, 39, 22) ; scénario de bout en bout 16/16 par l'URL publique ; RBAC 118/118 ; protections 9/9 |
 | Scaling | HPA 2 → 5 réplicas en 30 à 45 s ; 3e nœud prêt 48 s après la demande, plafond de 3 tenu ; retour à 2 nœuds en 4 min 24 |
 | Coûts | outillage ≈ 0,23 $/h, staging ≈ 0,39 $/h, séance ≈ 0,62 $/h ; 0 $ entre deux séances ; 9,79 $ dépensés sur les projets précédents, 190,21 $ de crédits restants |
-| Sécurité | 6 images scannées par ECR sans vulnérabilité signalée ; 4 exceptions Trivy motivées ; aucune clé AWS dans les pipelines (OIDC) |
+| Sans coupure | 126/126 et 124/124 requêtes en HTTP 200 pendant un remplacement de pods ; 131/131 pendant la vidange d'un nœud |
+| Sécurité | 6 images scannées par ECR sans vulnérabilité signalée ; 4 exceptions Trivy motivées ; aucune clé AWS dans les pipelines (OIDC) ; pod privilégié refusé par Pod Security |
 
 ## Déroulé de la démonstration
 
@@ -87,8 +88,8 @@ une NetworkPolicy par sens et par port.
 
 #### 4. Comment l'application est-elle orchestrée sur Kubernetes ?
 Sur EKS 1.36, deux nœuds `c7i-flex.large` sur deux zones. L'espace `movies` porte
-l'application, en Pod Security `restricted`, avec un quota qui interdit tout load
-balancer créé hors de Terraform. `api-gateway` et `inventory-app` sont des
+l'application, en Pod Security `restricted` (un pod privilégié y est refusé,
+mesuré), avec un quota qui interdit tout load balancer créé hors de Terraform. `api-gateway` et `inventory-app` sont des
 Deployments à 2 réplicas au moins, répartis sur les deux nœuds, avec un budget de
 perturbation ; `billing-app`, les bases et RabbitMQ sont des StatefulSets à une
 copie, les bases et RabbitMQ sur des disques gp3 chiffrés. Chaque conteneur déclare
@@ -191,8 +192,15 @@ ouvré. Quatre trouvailles Trivy sont acceptées et motivées, une par une.
   par un essai avec un faux `aws` en échec, corrigé, éprouvé.
 - **Un GitLab neuf à chaque séance** : la publication ne savait pas remplir un
   projet vide ; les clés SSH des machines neuves se vérifient contre la console EC2.
-- **Une version non figée** : Docker du runner s'installait à la dernière version ;
-  figé sur le runner et le poste, à la version de la ligne Pile du README.
+- **Des versions non figées** : Docker du runner s'installait à la dernière
+  version, et les jobs de CI installaient leurs outils sans version (Helm 3.19 au
+  lieu de 4.3.1) ; tout est figé à la version de la ligne Pile, prouvé dans les
+  pipelines de la seconde séance.
+- **Une empreinte mal placée, vue au déploiement** : écrite dans l'étiquette, elle
+  rendait node-exporter invalide (le chart ajoute `-distroless` après) et
+  empêchait l'opérateur de lire la version de Prometheus ; la garde de la porte ne
+  vérifiait que le début de la référence. Empreintes passées par les champs des
+  charts, garde rendue stricte et éprouvée sur les valeurs fautives.
 
 #### 15. Quelle sobriété (Green IT) ?
 Images minimales et mesurées, aucune dépendance de développement servie ; rien ne
