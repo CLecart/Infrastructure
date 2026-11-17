@@ -9,6 +9,8 @@
 # commit (a fast-forward). It refuses when main holds a version this repository
 # has never had, e.g. a merge request merged in GitLab: pull it first, or it
 # would be undone. pull copies main into repos/<name> and commits it here.
+# On a new GitLab, whose projects are created empty, the first push creates
+# main from the committed files of repos/<name>.
 # Without a name, every folder of repos/ is synchronised. Git goes over SSH
 # with the key that the gitlab_projects Ansible role registers for clecart.
 set -euo pipefail
@@ -39,6 +41,25 @@ fi
 work="$(mktemp -d)"
 trap 'rm -rf "${work:?}"' EXIT
 
+# First publication into an empty project: main starts from the committed
+# files of the folder, with every change of the folder in the message body.
+publish_first() {
+  local name="$1" url="$2" clone="$3" files="$4"
+  git init --quiet --initial-branch=main "$clone"
+  git -C "$clone" remote add origin "$url"
+  git -C "$ROOT" archive HEAD "repos/$name" | tar -x -C "$files" --strip-components=2
+  rsync -a "$files/" "$clone/"
+  git -C "$clone" add -A
+  {
+    echo "chore: first publication of repos/$name"
+    echo
+    echo "From repos/$name of Infrastructure:"
+    git -C "$ROOT" log --reverse --format='- %s' -- "repos/$name"
+  } | git -C "$clone" commit --quiet -F -
+  git -C "$clone" push --quiet origin main
+  echo "main of $name created at $(git -C "$clone" rev-parse --short HEAD)"
+}
+
 for name in "${names[@]}"; do
   if [[ ! -d "$ROOT/repos/$name" ]]; then
     echo "No folder repos/$name" >&2
@@ -49,6 +70,15 @@ for name in "${names[@]}"; do
   files="$work/$name.files"
   mkdir "$files"
   echo "== $action $name ($url)"
+  remote_main="$(git ls-remote --heads "$url" main)"
+  if [[ -z "$remote_main" ]]; then
+    if [[ "$action" == pull ]]; then
+      echo "error: $name has no main branch yet: nothing to pull" >&2
+      exit 1
+    fi
+    publish_first "$name" "$url" "$clone" "$files"
+    continue
+  fi
   git clone --quiet --branch main "$url" "$clone"
 
   case "$action" in
