@@ -195,6 +195,7 @@ mensuel de 10 $ prévient par e-mail à 50 % et 100 %.
 | kubectl, Helm | vérifications et démonstrations sur le cluster |
 | Docker, Docker Compose | application locale ; outils de la porte, dans leurs images épinglées |
 | jq, rsync, git, ssh, curl | scripts |
+| python3 et PyYAML (paquet `python3-yaml`) | la porte lit les jobs dans les fichiers de CI |
 
 **Accès** :
 
@@ -674,40 +675,41 @@ protégés sont réservés à GitLab Premium).
 
 ## 14. Vérifier avant de pousser : la porte locale
 
-Les pipelines GitLab ne tournent que dans le GitLab que le projet déploie.
-Avant chaque push, `Scripts/ci-gate.sh` rejoue donc leurs contrôles sur le
-poste, avec les mêmes images, épinglées par empreinte et lues dans les fichiers
-de CI, et ajoute ce qu'aucun job ne vérifie.
+Les pipelines GitLab ne tournent que dans le GitLab que le projet déploie, le
+temps d'une séance ; les dépôts Gitea et GitHub n'exécutent rien. Avant chaque
+commit et chaque push, `Scripts/ci-gate.sh` exécute donc sur le poste le
+**script de chaque job** qui ne demande ni GitLab, ni AWS, ni service, **dans
+l'image du job**, tous deux lus dans les fichiers de CI : la porte ne peut pas
+s'écarter des jobs, et un job renommé ou supprimé la fait tomber. Elle ajoute
+ce qu'aucun job ne vérifie.
 
 ```bash
 Scripts/ci-gate.sh && git push
 ```
 
-| Étape | Ce qu'elle vérifie | Job de CI repris |
-|---|---|---|
-| `no-silencing-directive` | aucune directive qui fait taire un outil | — |
-| `every-image-pinned` | chaque image tirée par son empreinte | — |
-| `helm-images-pinned` | chaque image que rendent les charts Helm (`helm template`, versions de `deploy-platform.sh`), argument de l'opérateur compris | — |
-| `shellcheck` | chaque script shell | — |
-| `hadolint` | chaque recette Docker, images des bases comprises | `dockerfile-lint` |
-| `terraform-validate` | `fmt -check` et `validate` (staging, prod, bootstrap) | `validate` |
-| `tflint` | bonnes pratiques Terraform | `tflint` |
-| `iac-scan` | mauvaises configurations HIGH et CRITICAL (Trivy) | `iac-scan` |
-| `dependency-scan:<app>` | vulnérabilités corrigées et secrets (Trivy) | `dependency-scan` |
-| `lint-and-test:<app>` | ESLint et tests unitaires | `lint`, `test` |
-| `renovate-config` | configuration de Renovate | `validate-config` |
-| `compose-config` | `compose.yaml` valide, lu avec `.env.example` | — |
-| `secrets-in-history` | aucun secret dans un commit de n'importe quelle branche, ni dans les fichiers pas encore commités (gitleaks, dépôt monté en lecture seule) | — |
+| Étape | Ce qu'elle vérifie |
+|---|---|
+| `no-silencing-directive` | aucune directive qui fait taire un outil |
+| `every-image-pinned` | chaque image tirée par son empreinte (recettes, CI, scripts, valeurs Helm) |
+| `helm-images-pinned` | chaque image que rendent les charts Helm (`helm template`, versions de `deploy-platform.sh`), argument de l'opérateur compris |
+| `shellcheck` | chaque script shell |
+| `hadolint` | chaque recette Docker, images des bases comprises |
+| `terraform-bootstrap` | `fmt -check` et `validate` du socle, qu'aucun pipeline ne lance |
+| `validate`, `tflint`, `iac-scan` | jobs du dépôt `infra` |
+| `dependency-scan`, `build`, `test`, `lint`, `dockerfile-lint` (`:<app>`) | jobs de chaque application ; `dependency-scan` d'abord, sur une copie neuve, comme le job |
+| `validate-config` | job du dépôt `renovate` |
+| `compose-config` | `compose.yaml` valide, lu avec `.env.example` |
+| `secrets-in-history` | aucun secret dans un commit de n'importe quelle branche, ni dans les fichiers pas encore commités (gitleaks, dépôt monté en lecture seule) |
 
-Elle travaille sur une copie des fichiers que Git suit ou suivrait, n'écrit rien
+Elle travaille sur des copies des fichiers que Git suit ou suivrait, n'écrit rien
 dans le dépôt (elle le vérifie), va au bout de chaque étape et garde leur journal
-dans `~/.local/state/infrastructure-gate/`. Durée mesurée : une minute environ,
-dont la moitié pour `terraform init`.
+dans `~/.local/state/infrastructure-gate/`. Seuls les caches (npm, Trivy,
+greffons Terraform) sortent de la copie, ce qui accélère la porte sans changer ce
+qu'elle vérifie. Durée mesurée : 42 s, dont 15 s pour le job `validate`.
 
-Non rejoués : `semgrep-sast` et `sast-gate` (modèle de GitLab), `integration-test`
+Non exécutés : `semgrep-sast` et `sast-gate` (modèle de GitLab), `integration-test`
 (services PostgreSQL et RabbitMQ), et les jobs qui demandent GitLab ou AWS
 (construction des images, `plan`, `apply`, déploiements).
-
 
 ---
 

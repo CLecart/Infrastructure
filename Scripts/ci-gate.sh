@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
-# Local gate, run before every push: replays the checks of the GitLab CI jobs
-# with the images the CI files pin, plus the guards that no job holds
-# (shellcheck on every script, hadolint on every recipe, no silencing
-# directive, every image pinned by digest, Helm charts included, a valid
-# compose.yaml, no secret in the history). It checks a copy of the files Git tracks or would track, never
-# writes in the repository, and keeps the log of each step under
-# ~/.local/state/infrastructure-gate/.
+# Local gate, run before every commit and every push. It runs the script of
+# every CI job that needs neither GitLab, AWS nor a service, in the image of
+# that job, both read from the .gitlab-ci.yml files, so the gate cannot drift
+# from the jobs. It adds the guards that no job holds: shellcheck on every
+# script, hadolint on every recipe, Terraform of bootstrap/, no silencing
+# directive, every image pinned by digest (Helm charts included), a valid
+# compose.yaml, no secret in the history. It works on copies of the files Git
+# tracks or would track, never writes in the repository (and checks it), and
+# keeps the log of each step under ~/.local/state/infrastructure-gate/.
 #   Scripts/ci-gate.sh
-# Not replayed: semgrep-sast and sast-gate (GitLab template), integration-test
+# Jobs run: validate, tflint, iac-scan (infra); dependency-scan, build, test,
+# lint, dockerfile-lint (each application); validate-config (renovate). Not
+# run: semgrep-sast and sast-gate (GitLab template), integration-test
 # (PostgreSQL and RabbitMQ services), and the jobs that need GitLab or AWS.
+# Needs docker, git, and python3 with PyYAML.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -30,8 +35,8 @@ trap 'exit 143' TERM
 mkdir -p "$LOG_DIR" "$CACHE/npm" "$CACHE/terraform" "$CACHE/trivy"
 find "${STATE:?}" -mindepth 1 -maxdepth 1 -type d -name '20*' -mtime +7 -exec rm -rf {} +
 
-# First reference of an image, with its digest, in the CI files: the gate runs
-# exactly what the jobs run.
+# First reference of an image, with its digest, in the CI files, for the checks
+# the gate adds with the tools of the jobs.
 pinned() {
   local all
   all="$(grep -h -o -E "$1@sha256:[a-f0-9]{64}" "$ROOT"/repos/*/.gitlab-ci.yml || true)"
@@ -41,12 +46,8 @@ pinned() {
   fi
   printf '%s\n' "${all%%$'\n'*}"
 }
-NODE_IMAGE="$(pinned 'public\.ecr\.aws/docker/library/node:[^@[:space:]]+')"
 TERRAFORM_IMAGE="$(pinned 'public\.ecr\.aws/hashicorp/terraform:[^@[:space:]]+')"
-TFLINT_IMAGE="$(pinned 'ghcr\.io/terraform-linters/tflint:[^@[:space:]]+')"
-TRIVY_IMAGE="$(pinned 'public\.ecr\.aws/aquasecurity/trivy:[^@[:space:]]+')"
 HADOLINT_IMAGE="$(pinned 'ghcr\.io/hadolint/hadolint:[^@[:space:]]+')"
-RENOVATE_IMAGE="$(pinned 'ghcr\.io/renovatebot/renovate:[0-9.]+')"
 
 RUN=(docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp)
 
@@ -135,6 +136,70 @@ hadolint_every_recipe() {
   return "$rc"
 }
 
+# Image and script of a CI job, read from its .gitlab-ci.yml: the image on the
+# first line (the job's, else the default one, variables expanded), then the
+# variables of the file and of the job as defaults, then the script. extends
+# is followed; a !reference tag stops the gate instead of being skipped.
+job_spec() {
+  python3 -I - "$1" "$2" <<'PY_JOB'
+import re, sys, yaml
+
+class Loader(yaml.SafeLoader):
+    pass
+
+Loader.add_multi_constructor("!", lambda loader, suffix, node: {"!": suffix})
+path, name = sys.argv[1], sys.argv[2]
+doc = yaml.load(open(path), Loader=Loader)
+
+def job(key):
+    if not isinstance(doc.get(key), dict):
+        sys.exit(f"no job {key} in {path}")
+    own = dict(doc[key])
+    parents = own.pop("extends", [])
+    merged = {}
+    for parent in [parents] if isinstance(parents, str) else parents:
+        merged.update(job(parent))
+    merged.update(own)
+    return merged
+
+def values(block):
+    return {k: v.get("value") if isinstance(v, dict) else v for k, v in (block or {}).items()}
+
+spec = job(name)
+variables = {**values(doc.get("variables")), **values(spec.get("variables"))}
+image = spec.get("image") or (doc.get("default") or {}).get("image")
+image = image.get("name") if isinstance(image, dict) else image
+if not image:
+    sys.exit(f"no image for job {name} in {path}")
+image = re.sub(r"\$\{?(\w+)\}?", lambda m: str(variables.get(m[1], m[0])), image)
+lines = list(spec.get("before_script") or []) + list(spec.get("script") or [])
+if not lines or any(not isinstance(line, str) for line in lines):
+    sys.exit(f"job {name} in {path}: no script, or a !reference the gate cannot follow")
+print(image)
+for key, value in variables.items():
+    text = str(value).replace("\\", "\\\\").replace('"', '\\"').replace("`", "\\`")
+    print(f'export {key}="${{{key}:-{text}}}"')
+print("\n".join(lines))
+PY_JOB
+}
+
+# Runs a CI job as the runner would: its script, under set -e, in its image, on
+# a copy of its repository. Only the caches move out of the copy (npm, Trivy,
+# Terraform plugins), which speeds up the gate without changing what it checks.
+run_job() {
+  local ci="$1" job="$2" dir="$3" spec image
+  spec="$(job_spec "$ci" "$job")" || return 1
+  image="${spec%%$'\n'*}"
+  echo "== job $job of ${ci#"$WORK/"*/}, image $image"
+  printf '%s\n' "${spec#*$'\n'}" | sed 's/^/   | /'
+  "${RUN[@]}" -v "$dir:/builds/project" -w /builds/project -e CI_PROJECT_DIR=/builds/project \
+    -v "$CACHE/npm:/tmp/npm" -e npm_config_cache=/tmp/npm \
+    -v "$CACHE/trivy:/tmp/trivy" -e TRIVY_CACHE_DIR=/tmp/trivy \
+    -v "$CACHE/terraform:/tmp/terraform-plugins" -e TF_PLUGIN_CACHE_DIR=/tmp/terraform-plugins \
+    --entrypoint sh "$image" -c "set -e
+${spec#*$'\n'}"
+}
+
 terraform_in() {
   local dir="$1"
   shift
@@ -142,43 +207,11 @@ terraform_in() {
     --entrypoint terraform "$TERRAFORM_IMAGE" "$@"
 }
 
-# Jobs validate (repos/infra) and the same checks on bootstrap/, outside the CI.
-terraform_validate() {
-  local infra="$WORK/tree/repos/infra" env
-  terraform_in "$infra" fmt -check -recursive -diff terraform &&
-    terraform_in "$WORK/tree/bootstrap" fmt -check -diff || return 1
-  for env in staging prod; do
-    echo "== envs/$env"
-    terraform_in "$infra" -chdir="terraform/envs/$env" init -backend=false -input=false -no-color >/dev/null &&
-      terraform_in "$infra" -chdir="terraform/envs/$env" validate -no-color || return 1
-  done
-  echo "== bootstrap"
-  terraform_in "$WORK/tree/bootstrap" init -backend=false -input=false -no-color >/dev/null &&
+# The checks of the validate job on bootstrap/, which no pipeline runs.
+terraform_bootstrap() {
+  terraform_in "$WORK/tree/bootstrap" fmt -check -diff &&
+    terraform_in "$WORK/tree/bootstrap" init -backend=false -input=false -no-color >/dev/null &&
     terraform_in "$WORK/tree/bootstrap" validate -no-color
-}
-
-tflint_infra() {
-  "${RUN[@]}" -v "$WORK/tree/repos/infra:/work:ro" -w /work --entrypoint tflint "$TFLINT_IMAGE" \
-    --chdir=terraform --recursive --config=/work/.tflint.hcl
-}
-
-iac_scan() {
-  "${RUN[@]}" -v "$WORK/tree/repos/infra:/work:ro" -w /work -v "$CACHE/trivy:/cache" -e TRIVY_CACHE_DIR=/cache \
-    --entrypoint trivy "$TRIVY_IMAGE" config --skip-check-update --skip-dirs "**/.terraform" --exit-code 1 \
-    --severity HIGH,CRITICAL --ignorefile .trivyignore.yaml terraform/
-}
-
-# Before npm ci, as the job reads a fresh checkout.
-dependency_scan() {
-  "${RUN[@]}" -v "$WORK/apps/$1:/work:ro" -w /work -v "$CACHE/trivy:/cache" -e TRIVY_CACHE_DIR=/cache \
-    --entrypoint trivy "$TRIVY_IMAGE" fs --no-progress --scanners vuln,secret --exit-code 1 \
-    --severity HIGH,CRITICAL --ignore-unfixed .
-}
-
-# Jobs lint and test.
-lint_and_test() {
-  "${RUN[@]}" -v "$WORK/apps/$1:/work" -w /work -v "$CACHE/npm:/tmp/.npm" -e npm_config_cache=/tmp/.npm \
-    --entrypoint sh "$NODE_IMAGE" -c 'npm ci --no-audit --no-fund && npm run lint && npm test'
 }
 
 # Every commit of every branch, the repository mounted read-only, then the
@@ -198,11 +231,6 @@ secrets_in_history() {
 compose_config() {
   docker compose --project-directory "$WORK/tree" -f "$WORK/tree/compose.yaml" \
     --env-file "$WORK/tree/.env.example" config --quiet
-}
-
-renovate_config() {
-  "${RUN[@]}" -v "$WORK/tree/repos/renovate:/work:ro" -w /work --entrypoint renovate-config-validator \
-    "$RENOVATE_IMAGE" --strict renovate.json default.json
 }
 
 failed=()
@@ -229,14 +257,18 @@ step every-image-pinned guard_every_image_pinned
 step helm-images-pinned helm_images_pinned
 step shellcheck shellcheck_every_script
 step hadolint hadolint_every_recipe
-step terraform-validate terraform_validate
-step tflint tflint_infra
-step iac-scan iac_scan
-for app in "${APPS[@]}"; do
-  step "dependency-scan:$app" dependency_scan "$app"
-  step "lint-and-test:$app" lint_and_test "$app"
+step terraform-bootstrap terraform_bootstrap
+infra="$WORK/tree/repos/infra"
+for job in validate tflint iac-scan; do
+  step "$job" run_job "$infra/.gitlab-ci.yml" "$job" "$infra"
 done
-step renovate-config renovate_config
+# dependency-scan first: the job reads a fresh checkout, before npm ci.
+for app in "${APPS[@]}"; do
+  for job in dependency-scan build test lint dockerfile-lint; do
+    step "$job:$app" run_job "$WORK/apps/$app/.gitlab-ci.yml" "$job" "$WORK/apps/$app"
+  done
+done
+step validate-config run_job "$WORK/tree/repos/renovate/.gitlab-ci.yml" validate-config "$WORK/tree/repos/renovate"
 step compose-config compose_config
 step secrets-in-history secrets_in_history
 
