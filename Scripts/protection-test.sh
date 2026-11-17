@@ -5,7 +5,9 @@
 #
 #   1. pushing to main of an application                    -> refused
 #   2. starting a pipeline on main (e.g. DESTROY=true on infra) -> refused
-#   3. re-running a production deployment of main            -> refused
+#   3. re-running a deployment job of main (deploy-production, or
+#      deploy-staging when production was never deployed) -> refused;
+#      skipped, not failed, when main has no deployment yet
 #   4. reading the CI/CD variables of a project              -> refused
 #   5. pushing a branch                                      -> allowed: its
 #      pipeline runs build, test and scan only (no image, no deployment); the
@@ -84,9 +86,17 @@ else
   echo "  FAIL  2. pipeline on main of infra not refused as expected: ${answer:0:200}"; failed=$((failed + 1))
 fi
 
-deploy_job="$(as_root "$API/projects/$project/jobs?scope%5B%5D=success&per_page=100" | jq -r '[.[] | select(.name=="deploy-production")][0].id')"
-check "3. re-running deploy-production (job $deploy_job) refused" \
-  "$(dev_status -X POST "$API/projects/$project/jobs/$deploy_job/retry")" 403
+# Retrying a job of main takes the right to merge into main, whatever the
+# environment: the newest successful deployment is tried, production first.
+deploy="$(as_root "$API/projects/$project/jobs?scope%5B%5D=success&per_page=100" |
+  jq -r '([.[] | select(.name=="deploy-production")][0] // [.[] | select(.name=="deploy-staging")][0]) // empty | "\(.id) \(.name)"')"
+if [[ -n "$deploy" ]]; then
+  check "3. re-running ${deploy#* } of main (job ${deploy%% *}) refused" \
+    "$(dev_status -X POST "$API/projects/$project/jobs/${deploy%% *}/retry")" 403
+else
+  echo "  SKIP  3. re-running a deployment not tried: no deployment job of main in $APP yet"
+  skipped=$((skipped + 1))
+fi
 
 check "4. reading the CI/CD variables of $APP refused" \
   "$(dev_status "$API/projects/$project/variables")" 403
