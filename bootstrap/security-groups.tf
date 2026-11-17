@@ -1,6 +1,6 @@
 resource "aws_security_group" "gitlab" {
   name        = "${var.project}-gitlab"
-  description = "GitLab: web and SSH from the admin, web from the runner"
+  description = "GitLab: web and SSH from the admin, web from the team, HTTPS from the runner"
   vpc_id      = aws_vpc.this.id
 
   tags = { Name = "${var.project}-gitlab" }
