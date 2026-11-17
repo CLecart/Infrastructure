@@ -154,8 +154,9 @@ Aucun secret dans le dépôt : coffre Ansible chiffré pour GitLab, mot de passe
 coffre hors du dépôt ; aucune clé AWS dans les pipelines (OIDC, identifiants
 temporaires) ; mots de passe des bases et de RabbitMQ tirés au hasard dans le
 cluster ; `.env` local ignoré par Git, sans lequel Compose refuse de démarrer.
-Trivy cherche les secrets du code à chaque pipeline, et l'historique entier a été
-relu avant la publication sur GitHub.
+Trivy cherche les secrets du code à chaque pipeline ; avant chaque push, la porte
+passe gitleaks sur tout l'historique et sur les fichiers pas encore commités, et
+un faux jeton y est arrêté, commité ou non.
 
 #### 12. Comment le moindre privilège est-il appliqué ?
 Un rôle IAM par projet GitLab, que seul le jeton de sa branche `main` peut prendre ;

@@ -2,9 +2,10 @@
 # Local gate, run before every push: replays the checks of the GitLab CI jobs
 # with the images the CI files pin, plus the guards that no job holds
 # (shellcheck on every script, hadolint on every recipe, no silencing
-# directive, every image pinned by digest, a valid compose.yaml). It checks a copy of the files Git
-# tracks or would track, never writes in the repository, and keeps the log of
-# each step under ~/.local/state/infrastructure-gate/.
+# directive, every image pinned by digest, a valid compose.yaml, no secret in
+# the history). It checks a copy of the files Git tracks or would track, never
+# writes in the repository, and keeps the log of each step under
+# ~/.local/state/infrastructure-gate/.
 #   Scripts/ci-gate.sh
 # Not replayed: semgrep-sast and sast-gate (GitLab template), integration-test
 # (PostgreSQL and RabbitMQ services), and the jobs that need GitLab or AWS.
@@ -16,6 +17,7 @@ CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/infrastructure-gate"
 LOG_DIR="$STATE/$(date +%Y%m%d-%H%M%S)"
 APPS=(api-gateway-app billing-app inventory-app)
 SHELLCHECK_IMAGE="koalaman/shellcheck:v0.10.0@sha256:2097951f02e735b613f4a34de20c40f937a6c8f18ecb170612c88c34517221fb"
+GITLEAKS_IMAGE="ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f"
 
 WORK="$(mktemp -d)"
 cleanup() { rm -rf "${WORK:?}"; }
@@ -152,6 +154,19 @@ lint_and_test() {
     --entrypoint sh "$NODE_IMAGE" -c 'npm ci --no-audit --no-fund && npm run lint && npm test'
 }
 
+# Every commit of every branch, the repository mounted read-only, then the
+# files not committed yet: a secret already in the history is found, a new
+# one is stopped before it gets there. The repository is public on GitHub.
+# The files come from a copy of their own: the terraform steps fill
+# $WORK/tree with downloaded modules, whose examples hold sample keys.
+secrets_in_history() {
+  copy_tree "$WORK/secrets" &&
+    "${RUN[@]}" -v "$ROOT:/repo:ro" --entrypoint gitleaks "$GITLEAKS_IMAGE" \
+      git --no-banner --no-color --redact --verbose --log-opts=--all /repo &&
+    "${RUN[@]}" -v "$WORK/secrets:/work:ro" --entrypoint gitleaks "$GITLEAKS_IMAGE" \
+      dir --no-banner --no-color --redact --verbose /work
+}
+
 # The model of .env, as .env itself is never copied.
 compose_config() {
   docker compose --project-directory "$WORK/tree" -f "$WORK/tree/compose.yaml" \
@@ -195,6 +210,7 @@ for app in "${APPS[@]}"; do
 done
 step renovate-config renovate_config
 step compose-config compose_config
+step secrets-in-history secrets_in_history
 
 if [[ "$(repo_state)" != "$before" ]]; then
   printf 'KO  %-34s\n' "nothing-written-in-the-repository"

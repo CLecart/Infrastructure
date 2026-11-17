@@ -636,7 +636,7 @@ depuis lui. Chaque ligne nomme sa preuve.
 
 | Contrôle | Résultat |
 |---|---|
-| Aucun secret dans le dépôt | `.gitignore` (état Terraform, `*.tfvars`, coffre Ansible, `.env`, identifiants AWS) ; Trivy cherche les secrets dans le code des services à chaque pipeline (`dependency-scan`) ; l'historique entier relu avant la publication sur GitHub : aucune clé, aucun identifiant de compte, aucune IP |
+| Aucun secret dans le dépôt | `.gitignore` (état Terraform, `*.tfvars`, coffre Ansible, `.env`, identifiants AWS) ; Trivy cherche les secrets dans le code des services à chaque pipeline (`dependency-scan`) ; avant chaque push, gitleaks lit tout l'historique et les fichiers pas encore commités (étape `secrets-in-history` de la porte) : rien trouvé, et un faux jeton est arrêté, commité ou non |
 | Secrets de GitLab | coffre Ansible chiffré, mot de passe du coffre hors du dépôt |
 | Accès AWS des pipelines | aucune clé : OIDC, identifiants temporaires |
 | Mots de passe des bases et de RabbitMQ | tirés au hasard dans le cluster au premier déploiement (secrets Kubernetes), jamais affichés |
@@ -696,6 +696,7 @@ Scripts/ci-gate.sh && git push
 | `lint-and-test:<app>` | ESLint et tests unitaires | `lint`, `test` |
 | `renovate-config` | configuration de Renovate | `validate-config` |
 | `compose-config` | `compose.yaml` valide, lu avec `.env.example` | — |
+| `secrets-in-history` | aucun secret dans un commit de n'importe quelle branche, ni dans les fichiers pas encore commités (gitleaks, dépôt monté en lecture seule) | — |
 
 Elle travaille sur une copie des fichiers que Git suit ou suivrait, n'écrit rien
 dans le dépôt (elle le vérifie), va au bout de chaque étape et garde leur journal
