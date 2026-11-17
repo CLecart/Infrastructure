@@ -4,7 +4,9 @@
 //
 // In CI (job integration-test), PostgreSQL is the "postgres" service of the
 // job and POSTGRES_PASSWORD its throwaway password. For a local run, point the
-// tests at another server with TEST_POSTGRES_HOST and TEST_POSTGRES_PORT.
+// tests at another server with INTEGRATION_POSTGRES_HOST and
+// INTEGRATION_POSTGRES_PORT (not POSTGRES_PORT: Docker before 29.0 sets it to
+// tcp://<ip>:<port> in a job container linked to the postgres service).
 //
 // Each run works in a database of its own, created from schema.sql and dropped
 // at the end, so nothing is left on the server.
@@ -20,8 +22,8 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import pg from 'pg';
 
 const postgres = {
-  host: process.env.TEST_POSTGRES_HOST || 'postgres',
-  port: Number(process.env.TEST_POSTGRES_PORT || 5432),
+  host: process.env.INTEGRATION_POSTGRES_HOST || 'postgres',
+  port: Number(process.env.INTEGRATION_POSTGRES_PORT || 5432),
   user: 'postgres', // superuser of the official image: the job sets no POSTGRES_USER
   password: process.env.POSTGRES_PASSWORD,
 };

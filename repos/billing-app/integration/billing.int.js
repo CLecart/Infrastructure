@@ -1,10 +1,11 @@
 // Integration tests: the real billing-app (src/index.js in a child process,
 // configured by its real config module) against a real PostgreSQL and a real
 // RabbitMQ, the services of the integration-test job in CI. To run them
-// locally against containers of the same images, override hosts and ports:
+// locally against containers of the same images, point the tests at them:
 //
-//   POSTGRES_HOST=127.0.0.1 POSTGRES_PORT=<port> POSTGRES_PASSWORD=<password> \
-//   RABBITMQ_HOST=127.0.0.1 RABBITMQ_PORT=<port> RABBITMQ_DEFAULT_USER=ci \
+//   INTEGRATION_POSTGRES_HOST=127.0.0.1 INTEGRATION_POSTGRES_PORT=<port> \
+//   INTEGRATION_RABBITMQ_HOST=127.0.0.1 INTEGRATION_RABBITMQ_PORT=<port> \
+//   POSTGRES_PASSWORD=<password> RABBITMQ_DEFAULT_USER=ci \
 //   RABBITMQ_DEFAULT_PASS=<password> npm run test:integration
 //
 // Each run works in a database and a queue of its own, removed at the end.
@@ -26,8 +27,10 @@ const suffix = `${process.pid}_${randomBytes(4).toString('hex')}`;
 const DATABASE = `billing_it_${suffix}`;
 const QUEUE = `billing_queue_it_${suffix}`;
 
-// The variables of the integration-test job, which the service containers
-// read too: same passwords on both sides.
+// The credentials are the variables of the integration-test job, which the
+// service containers read too: same passwords on both sides. Not
+// POSTGRES_PORT / RABBITMQ_PORT for the addresses: Docker before 29.0 puts
+// <ALIAS>_PORT=tcp://<ip>:<port> in a job container linked to a service.
 function settings(env = process.env) {
   const required = (name) => {
     if (!env[name]) {
@@ -37,14 +40,14 @@ function settings(env = process.env) {
   };
   return {
     postgres: {
-      host: env.POSTGRES_HOST || 'postgres',
-      port: Number(env.POSTGRES_PORT || 5432),
+      host: env.INTEGRATION_POSTGRES_HOST || 'postgres',
+      port: Number(env.INTEGRATION_POSTGRES_PORT || 5432),
       user: env.POSTGRES_USER || 'postgres',
       password: required('POSTGRES_PASSWORD'),
     },
     rabbitmq: {
-      hostname: env.RABBITMQ_HOST || 'rabbitmq',
-      port: Number(env.RABBITMQ_PORT || 5672),
+      hostname: env.INTEGRATION_RABBITMQ_HOST || 'rabbitmq',
+      port: Number(env.INTEGRATION_RABBITMQ_PORT || 5672),
       username: env.RABBITMQ_DEFAULT_USER || 'ci',
       password: required('RABBITMQ_DEFAULT_PASS'),
     },
