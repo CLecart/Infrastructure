@@ -159,7 +159,8 @@ dockerfile-lint:
   script:
     - hadolint Dockerfile
 
-# Coding issues of the JavaScript source: the ESLint recommended rules, with
+# Coding issues of the JavaScript source: the ESLint recommended rules and a
+# cognitive complexity of 15 at most per function (sonarjs, Sonar S3776), with
 # the versions pinned in package.json (devDependencies).
 lint:
   stage: scan

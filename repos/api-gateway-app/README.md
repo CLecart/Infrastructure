@@ -10,7 +10,7 @@ Passerelle d'API du projet Infrastructure : elle transmet `/api/movies` à inven
 | Tests | `npm ci && npm test` (test runner intégré de Node) |
 | Image | `movies/api-gateway-app` dans Amazon ECR |
 
-En CI, le job `lint` (étape `scan`) applique les règles recommandées d'ESLint (`npm run lint`), et le job `integration-test` (étape `test`) démarre la passerelle réelle face à un vrai RabbitMQ (service GitLab) et à une inventory-app simulée (`npm run test:integration`, fichiers `integration/*.int.js`). En local, ces tests visent un RabbitMQ de test grâce à `INTEGRATION_RABBITMQ_HOST`, `INTEGRATION_RABBITMQ_PORT`, `RABBITMQ_DEFAULT_USER` et `RABBITMQ_DEFAULT_PASS`.
+En CI, le job `lint` (étape `scan`) applique par `npm run lint` les règles recommandées d'ESLint et une complexité cognitive de 15 au plus par fonction (règle S3776 de Sonar, par `eslint-plugin-sonarjs`), et le job `integration-test` (étape `test`) démarre la passerelle réelle face à un vrai RabbitMQ (service GitLab) et à une inventory-app simulée (`npm run test:integration`, fichiers `integration/*.int.js`). En local, ces tests visent un RabbitMQ de test grâce à `INTEGRATION_RABBITMQ_HOST`, `INTEGRATION_RABBITMQ_PORT`, `RABBITMQ_DEFAULT_USER` et `RABBITMQ_DEFAULT_PASS`.
 
 ## Configuration (variables d'environnement)
 
