@@ -16,10 +16,11 @@ PROJECT="movies"
 COLUMNS_HEADER="REGION EC2 EBS EIP NAT ELB CLB EKS RDS LAMBDA LOGS ECR"
 
 # Counts are computed by the AWS CLI (JMESPath length() in --query), never by
-# counting lines.
+# counting lines. JSON output: the CLI joins every page before applying the
+# query, where text output applies it page by page (50, 50... instead of 701).
 count_region() {
   local region="$1"
-  local common_args=(--region "$region" --output text)
+  local common_args=(--region "$region" --output json)
   printf '%s %s %s %s %s %s %s %s %s %s %s %s\n' "$region" \
     "$(aws ec2 describe-instances "${common_args[@]}" --filters Name=instance-state-name,Values=pending,running,stopping,stopped,shutting-down --query 'length(Reservations[].Instances[])')" \
     "$(aws ec2 describe-volumes "${common_args[@]}" --query 'length(Volumes)')" \
@@ -53,7 +54,7 @@ fi
 left="$(awk '{ for (i = 2; i <= NF; i++) s += $i } END { print s + 0 }' <<<"$rows")"
 
 # S3 is global: the state and OIDC buckets of bootstrap/ start with the project name.
-if ! buckets="$(aws s3api list-buckets --query "length(Buckets[?starts_with(Name, '$PROJECT-')])" --output text)"; then
+if ! buckets="$(aws s3api list-buckets --query "length(Buckets[?starts_with(Name, '$PROJECT-')])" --output json)"; then
   echo "error: an AWS call failed during the inventory" >&2
   exit 2
 fi
