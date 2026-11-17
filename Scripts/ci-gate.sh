@@ -76,7 +76,11 @@ guard_every_image_pinned() {
   local found
   found="$(cd "$WORK/tree" && {
     grep -rn -E '^FROM[[:space:]]' --include='Dockerfile*' . | grep -v '@sha256:' || true
-    grep -rn -i -E '(image|name)[a-z_]*[[:space:]]*[:=][[:space:]]*["'"'"']?[a-z0-9.-]+(/[a-z0-9._-]+)+:[A-Za-z0-9._-]+' \
+    # An image key with a short Docker Hub name too (busybox:1.37); a name key
+    # (GitLab CI services) only with a registry path, as "name" also names
+    # anything else.
+    grep -rn -i -E \
+      'image[a-z_]*[[:space:]]*[:=][[:space:]]*["'"'"']?[a-z0-9.-]+(/[a-z0-9._-]+)*:[A-Za-z0-9._-]+|name[[:space:]]*:[[:space:]]*["'"'"']?[a-z0-9.-]+(/[a-z0-9._-]+)+:[A-Za-z0-9._-]+' \
       --include='*.yml' --include='*.yaml' --include='*.sh' --exclude-dir=docs . | grep -v '@sha256:' || true
     grep -rn -E '^[[:space:]]+tag:[[:space:]]' repos/infra/platform/helm | grep -v '@sha256:' || true
   })"
