@@ -121,3 +121,24 @@ test('answers 502 JSON when inventory-app is unreachable', async () => {
     assert.deepEqual(await res.json(), { error: 'Inventory service unavailable' });
   });
 });
+
+test('cuts the connection when inventory-app fails mid-response', async () => {
+  // Status, headers and part of the body sent, then the upstream connection drops.
+  const inventory = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Content-Length': '100' });
+    res.write('{"partial":');
+    setTimeout(() => res.socket.destroy(), 50);
+  });
+  const inventoryUrl = await listen(inventory);
+  try {
+    await withGateway(inventoryUrl, async (base) => {
+      const res = await fetch(`${base}/api/movies`, { signal: AbortSignal.timeout(5000) });
+      assert.equal(res.status, 200);
+      // fetch reports a body cut short as "TypeError: terminated"; a gateway
+      // that kept the connection open would end in a TimeoutError instead.
+      await assert.rejects(res.text(), { name: 'TypeError', message: 'terminated' });
+    });
+  } finally {
+    await close(inventory);
+  }
+});
