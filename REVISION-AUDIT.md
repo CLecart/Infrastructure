@@ -196,6 +196,11 @@ ouvré. Quatre trouvailles Trivy sont acceptées et motivées, une par une.
   version, et les jobs de CI installaient leurs outils sans version (Helm 3.19 au
   lieu de 4.3.1) ; tout est figé à la version de la ligne Pile, prouvé dans les
   pipelines de la seconde séance.
+- **Une fin de séance qui aurait échoué dans un terminal** : Terraform colore sa
+  sortie même dans un tube, et `teardown.sh` ne reconnaissait plus la ligne
+  `Plan:` ; il aurait détruit staging puis laissé le socle facturé. Trouvé en
+  relisant le code, reproduit avec un faux `terraform` dans un pseudo-terminal,
+  corrigé, éprouvé.
 - **Une empreinte mal placée, vue au déploiement** : écrite dans l'étiquette, elle
   rendait node-exporter invalide (le chart ajoute `-distroless` après) et
   empêchait l'opérateur de lire la version de Prometheus ; la garde de la porte ne
