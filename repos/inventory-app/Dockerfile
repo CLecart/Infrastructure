@@ -13,8 +13,7 @@ LABEL org.opencontainers.image.title="inventory-app" \
       org.opencontainers.image.description="Inventory microservice: REST API for movies backed by PostgreSQL" \
       org.opencontainers.image.authors="clecart"
 
-# apk upgrade: take the security fixes released after the alpine:3.23 base image
-# (the ECR scan flagged zlib 1.3.2-r0, CVE-2026-85091, fixed in 1.3.2-r1).
+# apk upgrade: take the security fixes released after the alpine:3.23 base image.
 RUN apk upgrade --no-cache \
  && apk add --no-cache nodejs tini \
  && addgroup -S -g 1001 app \

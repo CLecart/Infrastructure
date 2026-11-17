@@ -2,7 +2,7 @@
 # in the billing-db database. Its HTTP server (port 8080) serves /health and
 # GET /api/orders.
 #
-# StatefulSet with a single replica, as the subject requires: the consumer has
+# StatefulSet with a single replica: the consumer has
 # a stable identity (billing-app-0) and is never scaled horizontally, so the
 # orders are stored one at a time, in queue order.
 # Reachable inside the cluster at billing-app:8080.

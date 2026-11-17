@@ -149,7 +149,7 @@ resource "aws_iam_policy" "environment_boundary" {
 data "aws_iam_policy_document" "ci_infra" {
   source_policy_documents = [data.aws_iam_policy_document.deny_tooling.json]
 
-  # The AWS services of an environment (cloud-design architecture), in Paris only.
+  # The AWS services of an environment, in Paris only.
   statement {
     sid = "EnvironmentServicesInParis"
     actions = [

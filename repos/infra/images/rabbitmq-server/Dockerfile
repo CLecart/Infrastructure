@@ -7,8 +7,7 @@ LABEL org.opencontainers.image.title="rabbitmq" \
       org.opencontainers.image.description="RabbitMQ message broker (AMQP 0-9-1) carrying billing messages from api-gateway-app to billing-app" \
       org.opencontainers.image.authors="clecart"
 
-# apk upgrade: take the security fixes released after the alpine:3.23 base image
-# (the ECR scan flagged zlib 1.3.2-r0, CVE-2026-85091, fixed in 1.3.2-r1).
+# apk upgrade: take the security fixes released after the alpine:3.23 base image.
 # tini reaps zombies and forwards SIGTERM to the broker for a clean shutdown.
 # /etc/rabbitmq is not created by the package; the broker and its config run as user rabbitmq (uid 100).
 RUN apk upgrade --no-cache \

@@ -17,7 +17,8 @@
 #
 # Changes nothing in the cluster or in AWS. Run by an administrator of the
 # cluster (impersonation needs the admin access entry), once the infra pipeline
-# has applied the change and the applications are deployed.
+# has applied platform/rbac.yaml and the access entries, and the applications
+# are deployed.
 #
 # Usage: Scripts/rbac-test.sh staging|prod
 set -euo pipefail

@@ -7,8 +7,7 @@ LABEL org.opencontainers.image.title="billing-database" \
 ENV PGDATA=/var/lib/postgresql/data \
     LANG=C.UTF-8
 
-# apk upgrade: take the security fixes released after the alpine:3.23 base image
-# (the ECR scan flagged zlib 1.3.2-r0, CVE-2026-85091, fixed in 1.3.2-r1).
+# apk upgrade: take the security fixes released after the alpine:3.23 base image.
 # PostgreSQL 17 (+ contrib extensions) and tini as PID 1 for signal handling.
 # /run/postgresql holds the unix socket; the data directory is the mount point
 # of the named volume and is created here so the volume inherits its ownership.

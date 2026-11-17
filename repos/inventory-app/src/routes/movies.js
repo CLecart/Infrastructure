@@ -61,7 +61,7 @@ export function createMoviesRouter(db) {
     if (error) {
       return res.status(400).json({ error });
     }
-    // 201 Created, as the orchestrator audit of the Zone01 platform expects.
+    // 201 Created with the new movie: the status Scripts/test-api.sh checks.
     res.status(201).json(await db.createMovie(value));
   });
 

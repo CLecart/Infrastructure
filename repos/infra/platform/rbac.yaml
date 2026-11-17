@@ -16,7 +16,7 @@
 # verb is limited to its own names. Nothing else: no access to the Secrets, no
 # change to the databases, RabbitMQ, another application, the quota or the
 # network policies, no deletion, no Role or RoleBinding. Scripts/rbac-test.sh
-# (movies repository) checks it against the cluster.
+# (Infrastructure repository) checks it against the cluster.
 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role

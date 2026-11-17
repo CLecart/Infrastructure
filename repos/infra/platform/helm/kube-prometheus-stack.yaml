@@ -57,7 +57,7 @@ grafana:
     datasources:
       alertmanager:
         enabled: false
-  # Grafana 13 was OOMKilled with a 256Mi limit while loading a dashboard.
+  # 512Mi: with 256Mi, Grafana 13 is OOM-killed while loading a dashboard.
   resources:
     requests:
       cpu: 50m

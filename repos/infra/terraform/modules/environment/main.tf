@@ -1,5 +1,5 @@
-# One environment of the Infrastructure project: the cloud-design architecture
-# (VPC, EKS, internal ALB, API Gateway with Cognito, CloudWatch). Staging and
+# One environment of the Infrastructure project (VPC, EKS, internal ALB, API
+# Gateway with Cognito, CloudWatch). Staging and
 # production call this module with the same settings; only their name and
 # their VPC range differ.
 
@@ -16,7 +16,7 @@ locals {
 
   account_id = data.aws_caller_identity.current.account_id
 
-  # Boundary created by bootstrap/iam.tf (movies repository): the CI role
+  # Boundary created by bootstrap/iam.tf (Infrastructure repository): the CI role
   # of the infra pipeline may only create IAM roles that carry it.
   permissions_boundary = "arn:aws:iam::${local.account_id}:policy/${var.project}-environment-boundary"
   azs                  = slice(data.aws_availability_zones.available.names, 0, 2)

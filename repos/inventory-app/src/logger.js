@@ -1,6 +1,7 @@
 /**
  * Minimal structured logger: one JSON object per line on stdout.
- * Dependency-free on purpose (architecture contract); never log secrets.
+ * Dependency-free on purpose: a logging library would only replace these few
+ * lines. Never log secrets.
  */
 export function createLogger({ service, stream = process.stdout } = {}) {
   const write = (level) => (msg, fields = {}) => {
