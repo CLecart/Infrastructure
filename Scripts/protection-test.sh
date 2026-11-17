@@ -23,9 +23,11 @@
 #      skipped, not failed, when no pipeline of main waits for its approval
 #
 # Uses the Ansible API token of root (vault) to create and revoke the
-# impersonation token and to find the jobs to act on; nothing else is changed
-# except the test branch, deleted at the end (its pipeline stays in the history
-# as evidence), and a project created if check 8 fails, marked for deletion.
+# impersonation token and to find the jobs to act on. While the refusals hold,
+# nothing else is changed but the test branch, deleted at the end (its pipeline
+# stays in the history as evidence). A failed check acts for real: check 1
+# pushes to main, check 3 re-runs a deployment, check 9 approves production,
+# and a project created by a failed check 8 is marked for deletion.
 #
 # Usage: Scripts/protection-test.sh [application]   (default inventory-app)
 set -euo pipefail
@@ -40,7 +42,6 @@ ROOT_TOKEN="$(cd "$ROOT_DIR/ansible" && ansible-vault view group_vars/all/vault.
 
 as_root() { curl -sS --cacert "$CA" -H "PRIVATE-TOKEN: $ROOT_TOKEN" "$@"; }
 as_dev() { curl -sS --cacert "$CA" -H "PRIVATE-TOKEN: $DEV_TOKEN" "$@"; }
-# HTTP status of a request made as developer.
 dev_status() { as_dev -o /dev/null -w '%{http_code}' "$@"; }
 enc() { printf %s "$1" | sed 's|/|%2F|g'; }
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Proves that replacing the pods of an application cuts no request: requests
-# are sent without pause through the public API Gateway while the pods are
+# are sent continuously, about 5 per second, through the public API Gateway
+# while the pods are
 # replaced, and every answer other than HTTP 200 is counted.
 #
 # Usage: Scripts/zero-downtime-test.sh staging|prod api-gateway|inventory-app [rollout|drain|watch [seconds]]
@@ -88,7 +89,6 @@ else
   kubectl --context "$context" drain "$node" --pod-selector "app=$app" \
     --ignore-daemonsets --delete-emptydir-data --timeout=5m
 fi
-# Until every replica is ready again.
 kubectl --context "$context" -n movies rollout status "deployment/$app" --timeout=5m
 # Keep sending a little after the end (old pods still terminating).
 sleep 15

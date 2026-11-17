@@ -60,7 +60,7 @@ spec:
         runAsGroup: 1001
         seccompProfile:
           type: RuntimeDefault
-      # Spread the replicas over both nodes when possible.
+      # Spread the replicas across the nodes when possible.
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname

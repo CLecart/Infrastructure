@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Creates, once, the Ansible Vault password (outside the repository) and the
 # encrypted secrets file ansible/group_vars/all/vault.yml (ignored by Git).
-# No secret is printed or written in clear on disk.
+# Apart from the vault password itself (mode 600, outside the repository), no
+# secret is printed or written in clear on disk.
 #   Read the secrets:  cd ansible && ansible-vault view group_vars/all/vault.yml
 set -euo pipefail
 

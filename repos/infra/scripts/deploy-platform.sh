@@ -98,7 +98,7 @@ create_secret billing-db-secret billing_user
 create_secret rabbitmq-secret rabbit_user
 
 echo "== platform manifests"
-# Overlay generated at every run: only the image names change.
+# Overlay generated at every run: only the image references change (ECR name and tag).
 mkdir -p "$work/overlay"
 cp -r "$ROOT/platform" "$work/platform"
 {

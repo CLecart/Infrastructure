@@ -83,7 +83,8 @@ data "aws_iam_policy_document" "deny_tooling" {
 # The infra role may only create a role that carries this boundary: whatever
 # policies the role receives, its rights never exceed what the cluster, its
 # nodes, the EBS driver, the autoscaler and Fluent Bit need. No IAM (except
-# service-linked roles), no STS, nothing outside Paris-side compute and logs.
+# service-linked roles), no STS: compute, load balancing, logs, image pulls and
+# EBS encryption only. The Paris-only condition is on the infra role itself.
 data "aws_iam_policy_document" "environment_boundary" {
   source_policy_documents = [data.aws_iam_policy_document.deny_tooling.json]
 

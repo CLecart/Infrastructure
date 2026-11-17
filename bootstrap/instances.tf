@@ -15,8 +15,9 @@ resource "aws_instance" "gitlab" {
   instance_type          = var.gitlab_instance_type
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.gitlab.id]
-  # Public on purpose: the admin and the runner reach it through its Elastic IP,
-  # and the gitlab security group only lets in the admin IP and the runner.
+  # Public on purpose: the admin, the team and the runner reach it through its
+  # Elastic IP; the gitlab security group only lets in the admin and team ranges
+  # and the runner.
   associate_public_ip_address = true
   key_name                    = aws_key_pair.admin.key_name
 
@@ -44,8 +45,9 @@ resource "aws_instance" "runner" {
   instance_type          = var.runner_instance_type
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.runner.id]
-  # Public on purpose: the admin and the runner reach it through its Elastic IP,
-  # and the runner security group only lets in the admin IP.
+  # Public on purpose: with no NAT gateway, the runner reaches GitLab, the EKS
+  # API and the Internet from its Elastic IP, the address both allow; the runner
+  # security group only lets in the admin SSH.
   associate_public_ip_address = true
   key_name                    = aws_key_pair.admin.key_name
 

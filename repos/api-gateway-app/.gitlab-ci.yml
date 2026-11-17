@@ -215,9 +215,11 @@ containerization:
 
 # ---- CD (main only) ---------------------------------------------------------------
 
-# Rolling update of the application in the movies namespace of a cluster:
-# the new pods must be ready before the old ones stop (strategy and probes of
-# k8s/), and the job waits for the end of the rollout.
+# Rolling update of the application in the movies namespace of a cluster, then
+# the job waits for the end of the rollout. A Deployment (inventory-app,
+# api-gateway) gets its new pods ready before stopping the old ones (strategy
+# and probes of k8s/); the StatefulSet of billing-app replaces its single pod,
+# and the orders wait in RabbitMQ meanwhile.
 .deploy:
   image:
     name: $AWS_CLI_IMAGE

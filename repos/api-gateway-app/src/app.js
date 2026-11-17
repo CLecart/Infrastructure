@@ -27,7 +27,8 @@ export function createApp({ queue, logger, accessLogStream, inventoryUrl }) {
   app.disable('x-powered-by');
 
   if (accessLogStream) {
-    // Health probes run every 10 s and would drown the real traffic in access.log.
+    // Health checks (Docker HEALTHCHECK, the ALB target group) hit /health every few
+    // seconds and would drown the real traffic in access.log.
     app.use(morgan('combined', { stream: accessLogStream, skip: (req) => req.path === '/health' }));
   }
 

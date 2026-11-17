@@ -1,5 +1,6 @@
-# Two Availability Zones, each with a public subnet (load balancers, NAT) and a
-# private subnet (worker nodes, pods, databases). The private subnets are large
+# Two Availability Zones, each with a public subnet (the single NAT gateway sits
+# in one) and a private subnet (worker nodes, pods, databases, internal ALB, VPC
+# link). The private subnets are large
 # because the VPC CNI gives every pod an address from them.
 #   /16 -> private 0.0/19 and 32.0/19, public 96.0/24 and 97.0/24
 module "vpc" {

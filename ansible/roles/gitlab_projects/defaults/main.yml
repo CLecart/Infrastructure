@@ -1,7 +1,6 @@
 # Settings applied to every project of the group (PUT /projects/:id).
 gitlab_project_settings:
   visibility: private
-  # A merge request is merged only after a green pipeline and resolved threads.
   only_allow_merge_if_pipeline_succeeds: true
   only_allow_merge_if_all_discussions_are_resolved: true
   remove_source_branch_after_merge: true
@@ -23,7 +22,8 @@ gitlab_ci_variable_flags:
   raw: true
   variable_type: env_var
 
-# Variables shared by the four projects (values from the bootstrap outputs).
+# Variables of the group, inherited by each of its projects (values from the
+# bootstrap outputs).
 gitlab_group_variables:
   - key: AWS_REGION
     value: "{{ aws_region }}"

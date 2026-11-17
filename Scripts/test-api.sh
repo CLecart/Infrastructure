@@ -96,7 +96,6 @@ fail() {
   fi
 }
 
-# Print at most 300 characters of a response body.
 show_body() {
   if [[ -n "$1" ]]; then
     echo "       ${1:0:300}"
@@ -159,8 +158,9 @@ gateway_healthy() {
   [[ "$HTTP_STATUS" == 200 ]]
 }
 
-# Number of rows of a SQL query in billing-db ("unknown" when the database
-# cannot be queried). PGUSER and PGDATABASE are preset in the pod.
+# Number of orders matching a WHERE condition (default: all) in billing-db
+# ("unknown" when the database cannot be queried). PGUSER and PGDATABASE are
+# preset in the pod.
 orders_count() {
   local where=${1:-true} count
   count=$(kube exec billing-db-0 -- psql -tAc "SELECT count(*) FROM orders WHERE $where" 2>/dev/null | tr -d '[:space:]' || true)

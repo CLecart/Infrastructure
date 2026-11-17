@@ -37,7 +37,7 @@ gitlab_users:
     email: renovate-bot@example.com
     admin: false
 
-# Group holding the four repositories, one per application plus the infrastructure.
+# Group holding one repository per application, the infrastructure and Renovate.
 gitlab_group:
   name: movies
   path: movies

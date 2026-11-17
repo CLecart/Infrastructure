@@ -7,8 +7,8 @@ export class ConfigError extends Error {
 }
 
 /**
- * Parses and validates the environment. Non-secret variables default to the values used
- * in docker-compose.yml; the database password is mandatory.
+ * Parses and validates the environment. Non-secret variables have defaults; the database
+ * password is mandatory.
  */
 export function loadConfig(env = process.env) {
   return {

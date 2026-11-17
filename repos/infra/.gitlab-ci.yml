@@ -157,7 +157,8 @@ build-platform-images:
 
 # ---- init / validate ----------------------------------------------------------
 
-# Downloads the providers and modules and checks the access to the state backend.
+# Merge request: downloads the providers and modules, without the state backend
+# (no AWS access).
 init:
   stage: init
   extends: .terraform-cache
@@ -171,6 +172,7 @@ init:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
+# main: the same with the S3 backend, which checks the access to the state.
 init-backend:
   stage: init
   extends: [.aws, .terraform-cache]

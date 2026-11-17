@@ -28,7 +28,7 @@ module "eks" {
   create_kms_key    = false
   encryption_config = null
 
-  # Control plane logs in CloudWatch, kept one day only.
+  # Control plane logs in CloudWatch, kept one day: a cluster lives one work session.
   enabled_log_types                      = ["api", "audit", "authenticator"]
   cloudwatch_log_group_retention_in_days = 1
 

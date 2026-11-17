@@ -15,7 +15,8 @@ set -euo pipefail
 PROJECT="movies"
 COLUMNS_HEADER="REGION EC2 EBS EIP NAT ELB CLB EKS RDS LAMBDA LOGS ECR"
 
-# Counts are computed by AWS itself (JMESPath length), never by counting lines.
+# Counts are computed by the AWS CLI (JMESPath length() in --query), never by
+# counting lines.
 count_region() {
   local r="$1"
   local q=(--region "$r" --output text)
