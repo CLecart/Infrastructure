@@ -11,6 +11,11 @@ pki_ca_cert: "{{ pki_dir }}/ca.crt"
 # Pinned versions, upgraded on purpose by changing them here and re-running the playbook.
 gitlab_version: "19.5.1-ce.0"
 gitlab_runner_version: "19.5.0-1"
+# Docker Engine of the runner, the version of the admin machine (README, Pile line);
+# the Ubuntu suffix of the packages comes from the facts of the runner.
+docker_version: "29.10.0-1"
+containerd_version: "2.4.2-4"
+docker_buildx_version: "0.39.0-1"
 
 # Accounts created by the playbook. Passwords are in the vault (vault.yml).
 gitlab_users:

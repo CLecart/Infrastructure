@@ -23,14 +23,17 @@
     update_cache: true
   when: runner_docker_repository is changed or runner_gitlab_repository is changed
 
-- name: Install Docker Engine (executor of the CI jobs)
+- name: Install Docker Engine {{ docker_version }} (executor of the CI jobs)
   ansible.builtin.apt:
     name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - docker-buildx-plugin
+      - "docker-ce=5:{{ docker_version }}{{ runner_ubuntu_suffix }}"
+      - "docker-ce-cli=5:{{ docker_version }}{{ runner_ubuntu_suffix }}"
+      - "containerd.io={{ containerd_version }}{{ runner_ubuntu_suffix }}"
+      - "docker-buildx-plugin={{ docker_buildx_version }}{{ runner_ubuntu_suffix }}"
     state: present
+    allow_change_held_packages: true
+  vars:
+    runner_ubuntu_suffix: "~ubuntu.{{ ansible_facts['distribution_version'] }}~{{ ansible_facts['distribution_release'] }}"
 
 - name: Start Docker at boot
   ansible.builtin.systemd_service:
@@ -46,13 +49,17 @@
     state: present
     allow_change_held_packages: true
 
-- name: Hold GitLab Runner at the pinned version
+- name: Hold GitLab Runner and Docker Engine at the pinned versions
   ansible.builtin.dpkg_selections:
     name: "{{ item }}"
     selection: hold
   loop:
     - gitlab-runner
     - gitlab-runner-helper-images
+    - docker-ce
+    - docker-ce-cli
+    - containerd.io
+    - docker-buildx-plugin
 
 - name: Create the certificates directory
   ansible.builtin.file:
