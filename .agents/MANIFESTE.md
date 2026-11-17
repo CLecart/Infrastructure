@@ -40,7 +40,7 @@ compte-rendu d'origine.
    - Zéro code mort : variable Terraform sans lecteur, script que rien n'appelle, manifeste que rien n'applique se suppriment. L'historique Git est la sauvegarde. Les déclarations Terraform inutilisées sont tenues par le job `tflint` (`repos/infra/.tflint.hcl`) ; le reste n'est tenu par aucune garde.
 
 3. **Complexité maîtrisée :**
-   Un script fait une chose ; au-delà, il s'extrait en fonctions. Complexité cognitive de 15 au plus pour le code applicatif (Sonar S3776). Aucune garde ne la tient encore.
+   Un script fait une chose ; au-delà, il s'extrait en fonctions. Complexité cognitive de 15 au plus pour le code applicatif (Sonar S3776), tenue par la règle `sonarjs/cognitive-complexity` du job `lint` de chaque service ; le découpage des scripts n'est tenu par aucune garde.
 
 ---
 

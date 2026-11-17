@@ -729,6 +729,7 @@ Non exécutés : `semgrep-sast` et `sast-gate` (modèle de GitLab), `integration
 | Bases et RabbitMQ en conteneurs (StatefulSets, disques gp3 chiffrés) | fidèles au schéma de l'application, aucun coût en plus | RDS : sauvegardes et haute disponibilité gérées, plus cher |
 | Prometheus et Grafana dans le cluster | gratuits, accès par port-forward seulement | Amazon Managed Grafana, réservé au plan payant |
 | Trivy, Semgrep, hadolint, TFLint, ESLint | gratuits, sans compte ni quota ; Trivy couvre dépendances, secrets, images et Terraform | Snyk ou SonarQube Cloud (compte, quotas) ; tfsec à part |
+| Complexité cognitive par `eslint-plugin-sonarjs`, sa seule règle S3776, à 15 | la règle de Sonar dans le job `lint`, sans compte ni serveur ; dépendance de développement, absente des images ; complexité la plus haute mesurée : 8 | sa configuration `recommended` : 23 trouvailles sur les trois services, toutes points chauds à relire ou limite connue de l'outil, qu'il faudrait faire taire ou contourner (règle 5 du manifeste) |
 | Renovate auto-hébergé | une demande de fusion testée par mise à jour, chaque jour ouvré | Dependabot, propre à GitHub |
 | Tout détruire en fin de séance, socle compris | 0 $ entre deux séances ; la facture des projets précédents le confirme | éteindre GitLab et le runner : ≈ 13,80 $ par mois de disques et d'IP pour rien |
 | Clés SSH des machines neuves comparées à la console EC2 | aucune confiance accordée à la première connexion | accepter la clé au premier contact |
