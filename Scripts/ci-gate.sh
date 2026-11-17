@@ -94,7 +94,8 @@ guard_every_image_pinned() {
 # Every image the Helm charts pull, as `helm template` renders them with the
 # values of platform/helm and the chart versions of scripts/deploy-platform.sh:
 # each image key, a short name included, and each image passed as an argument
-# (the config-reloader of the operator) must carry a digest.
+# (the config-reloader of the operator) must be a well-formed reference ending
+# with a digest.
 helm_images_pinned() {
   local infra="$WORK/tree/repos/infra" name version rendered="" chart found list=()
   local -A repo=([kube-prometheus-stack]=https://prometheus-community.github.io/helm-charts
@@ -109,12 +110,16 @@ helm_images_pinned() {
       --set autoDiscovery.clusterName=gate --set awsRegion=eu-west-3)" || return 1
     rendered+="$chart"$'\n'
   done
+  # Each reference whole, its digest at the very end: a chart that appends a
+  # suffix after the tag (node-exporter adds -distroless) breaks it. A version
+  # field must stay a version: the Prometheus operator parses its tag.
   found="$({
     grep -E '^[[:space:]-]*image:' <<<"$rendered" | sed -E 's/^[[:space:]-]*image:[[:space:]]*//; s/"//g'
-    grep -o -E '[a-z0-9.-]+\.[a-z]{2,}(:[0-9]+)?/[a-z0-9._/-]+:[A-Za-z0-9._-]+(@sha256:[a-f0-9]{64})?' <<<"$rendered"
-  } | grep -v '@sha256:' | sort -u || true)"
+    grep -o -E '=[a-z0-9.-]+\.[a-z]{2,}(:[0-9]+)?/[a-z0-9._/-]+[:@][^[:space:]",]+' <<<"$rendered" | cut -c2-
+  } | grep -v -E '^[a-z0-9.-]+(:[0-9]+)?(/[a-z0-9._-]+)+(:[A-Za-z0-9._-]+)?@sha256:[a-f0-9]{64}$' | sort -u || true
+    grep -E '^[[:space:]]*version:.*@sha256' <<<"$rendered" | sed 's/^[[:space:]]*/version field: /' || true)"
   echo "$(grep -c -E '@sha256:' <<<"$rendered") pinned image references rendered"
-  [[ -z "$found" ]] || { mapfile -t list <<<"$found"; printf 'unpinned: %s\n' "${list[@]}"; return 1; }
+  [[ -z "$found" ]] || { mapfile -t list <<<"$found"; printf 'unpinned or malformed: %s\n' "${list[@]}"; return 1; }
 }
 
 shellcheck_every_script() {

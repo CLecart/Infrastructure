@@ -24,8 +24,11 @@ alertmanager:
 
 prometheus:
   prometheusSpec:
+    # The operator reads the version of Prometheus from the tag: the digest
+    # goes in its own field (rendered as @sha256:<sha>), the tag stays the
+    # chart's v3.15.0-distroless.
     image:
-      tag: v3.15.0-distroless@sha256:b2a413d5a03ea6a76782a508d1c7947440bba3b973931a25676e278431891b01
+      sha: b2a413d5a03ea6a76782a508d1c7947440bba3b973931a25676e278431891b01
     # The cluster lives one work session: no persistent volume (an EBS volume
     # would outlive `terraform destroy`), and one day of data at most.
     retention: 1d
@@ -82,6 +85,8 @@ kube-state-metrics:
   image:
     tag: v2.20.0@sha256:42cfe3723a5f058171c627537fb57a3ea0f26e4380fa18555a95cb1a1b4cfc5b
 
+# The chart appends -distroless after the tag (v1.12.1, its own): the digest
+# goes in its own field, rendered after that suffix.
 prometheus-node-exporter:
   image:
-    tag: v1.12.1-distroless@sha256:8c9bac11973b94b59be88d6e11fee4429aa743c8846cdc75d65b18db33f6a106
+    digest: sha256:8c9bac11973b94b59be88d6e11fee4429aa743c8846cdc75d65b18db33f6a106
