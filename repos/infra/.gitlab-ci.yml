@@ -48,6 +48,14 @@ variables:
   TF_PLUGIN_CACHE_DIR: "$CI_PROJECT_DIR/.terraform-plugins"
   # scripts/image-tag.sh reads the history of images/.
   GIT_DEPTH: "0"
+  # Tools of the kubernetes jobs, at the versions of the Pile line (README):
+  # the AWS CLI image by digest, kubectl and Helm checked against their SHA-256
+  # (official releases), updated by hand as Renovate cannot recompute them.
+  AWS_CLI_IMAGE: public.ecr.aws/aws-cli/aws-cli:2.38.2@sha256:5d39fd52f236ed01c5c25fba66c9aebcfc6cbb88e7bb1b727c5fe1f150540597
+  KUBECTL_VERSION: "1.36.4"
+  KUBECTL_SHA256: 8b8f088da2dab964f853b38464033b1be15ede2839eca751482357c45abdd05a
+  HELM_VERSION: "4.3.1"
+  HELM_SHA256: 0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b
 
 default:
   image:
@@ -87,12 +95,23 @@ default:
     - mkdir -p "$TF_PLUGIN_CACHE_DIR"
     - terraform -chdir="terraform/envs/$ENV" init -backend-config="bucket=$TF_STATE_BUCKET"
 
-# kubectl and helm for the platform layer ($ENV).
+# AWS CLI, kubectl and Helm for the platform layer ($ENV).
 .kubernetes:
   extends: .aws
+  image:
+    name: $AWS_CLI_IMAGE
+    entrypoint: [""]
   before_script:
     - !reference [.aws, before_script]
-    - apk add --no-cache aws-cli kubectl helm bash
+    # kubectl and Helm at the versions of the Pile line (README), from their
+    # official releases, each checked against its SHA-256 written in the variables.
+    - curl -fsSLo /usr/local/bin/kubectl "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/amd64/kubectl"
+    - echo "${KUBECTL_SHA256}  /usr/local/bin/kubectl" | sha256sum -c -
+    - chmod 0755 /usr/local/bin/kubectl
+    - curl -fsSLo /tmp/helm.tar.gz "https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz"
+    - echo "${HELM_SHA256}  /tmp/helm.tar.gz" | sha256sum -c -
+    - python3 -c 'import tarfile; open("/usr/local/bin/helm", "wb").write(tarfile.open("/tmp/helm.tar.gz").extractfile("linux-amd64/helm").read())'
+    - chmod 0755 /usr/local/bin/helm
 
 # ---- images ------------------------------------------------------------------
 

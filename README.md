@@ -732,6 +732,7 @@ Non exécutés : `semgrep-sast` et `sast-gate` (modèle de GitLab), `integration
 | Renovate auto-hébergé | une demande de fusion testée par mise à jour, chaque jour ouvré | Dependabot, propre à GitHub |
 | Tout détruire en fin de séance, socle compris | 0 $ entre deux séances ; la facture des projets précédents le confirme | éteindre GitLab et le runner : ≈ 13,80 $ par mois de disques et d'IP pour rien |
 | Clés SSH des machines neuves comparées à la console EC2 | aucune confiance accordée à la première connexion | accepter la clé au premier contact |
+| Outils des jobs Kubernetes et de déploiement : image AWS CLI par empreinte, kubectl et Helm vérifiés par leur SHA-256 | mesuré : `apk add` sans version donnait Helm 3.19.0, kubectl 1.36.1 et AWS CLI 2.34.63 au lieu des versions de la ligne Pile ; l'installation figée, éprouvée dans l'image, donne les versions exactes et refuse une archive dont la somme diffère | `apk add` sans version ; une image d'outils construite par le projet, à entretenir |
 | Porte locale qui rejoue la CI | le dépôt Gitea de l'école n'exécute rien ; un défaut se voit avant le push | ne vérifier que dans GitLab, qui n'existe que pendant une séance |
 
 ---
