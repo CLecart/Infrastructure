@@ -2,8 +2,8 @@
 # Local gate, run before every push: replays the checks of the GitLab CI jobs
 # with the images the CI files pin, plus the guards that no job holds
 # (shellcheck on every script, hadolint on every recipe, no silencing
-# directive, every image pinned by digest, a valid compose.yaml, no secret in
-# the history). It checks a copy of the files Git tracks or would track, never
+# directive, every image pinned by digest, Helm charts included, a valid
+# compose.yaml, no secret in the history). It checks a copy of the files Git tracks or would track, never
 # writes in the repository, and keeps the log of each step under
 # ~/.local/state/infrastructure-gate/.
 #   Scripts/ci-gate.sh
@@ -17,6 +17,7 @@ CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/infrastructure-gate"
 LOG_DIR="$STATE/$(date +%Y%m%d-%H%M%S)"
 APPS=(api-gateway-app billing-app inventory-app)
 SHELLCHECK_IMAGE="koalaman/shellcheck:v0.10.0@sha256:2097951f02e735b613f4a34de20c40f937a6c8f18ecb170612c88c34517221fb"
+HELM_IMAGE="docker.io/alpine/helm:4.3.1@sha256:e3f8d5c462d75470fbb1fce79ad5c20063657096d1f98c0fcea869e2600e2e5e"
 GITLEAKS_IMAGE="ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f"
 
 WORK="$(mktemp -d)"
@@ -87,6 +88,32 @@ guard_every_image_pinned() {
     grep -rn -E '^[[:space:]]+tag:[[:space:]]' repos/infra/platform/helm | grep -v '@sha256:' || true
   })"
   [[ -z "$found" ]] || { printf '%s\n' "$found"; return 1; }
+}
+
+# Every image the Helm charts pull, as `helm template` renders them with the
+# values of platform/helm and the chart versions of scripts/deploy-platform.sh:
+# each image key, a short name included, and each image passed as an argument
+# (the config-reloader of the operator) must carry a digest.
+helm_images_pinned() {
+  local infra="$WORK/tree/repos/infra" name version rendered="" chart found list=()
+  local -A repo=([kube-prometheus-stack]=https://prometheus-community.github.io/helm-charts
+    [fluent-bit]=https://fluent.github.io/helm-charts [cluster-autoscaler]=https://kubernetes.github.io/autoscaler)
+  for name in kube-prometheus-stack fluent-bit cluster-autoscaler; do
+    # An empty version would render the newest chart, not the deployed one.
+    version="$(sed -n -E "s/^${name//-/_}_VERSION=\"(.*)\"$/\1/Ip" "$infra/scripts/deploy-platform.sh")"
+    [[ -n "$version" ]] || { echo "no version of $name in scripts/deploy-platform.sh"; return 1; }
+    echo "== $name $version"
+    chart="$("${RUN[@]}" -v "$infra:/work:ro" -w /work --entrypoint helm "$HELM_IMAGE" template "$name" "$name" \
+      --repo "${repo[$name]}" --version "$version" -f "platform/helm/$name.yaml" \
+      --set autoDiscovery.clusterName=gate --set awsRegion=eu-west-3)" || return 1
+    rendered+="$chart"$'\n'
+  done
+  found="$({
+    grep -E '^[[:space:]-]*image:' <<<"$rendered" | sed -E 's/^[[:space:]-]*image:[[:space:]]*//; s/"//g'
+    grep -o -E '[a-z0-9.-]+\.[a-z]{2,}(:[0-9]+)?/[a-z0-9._/-]+:[A-Za-z0-9._-]+(@sha256:[a-f0-9]{64})?' <<<"$rendered"
+  } | grep -v '@sha256:' | sort -u || true)"
+  echo "$(grep -c -E '@sha256:' <<<"$rendered") pinned image references rendered"
+  [[ -z "$found" ]] || { mapfile -t list <<<"$found"; printf 'unpinned: %s\n' "${list[@]}"; return 1; }
 }
 
 shellcheck_every_script() {
@@ -199,6 +226,7 @@ echo "# Gate, $(git -C "$ROOT" rev-parse --short HEAD), logs: $LOG_DIR"
 
 step no-silencing-directive guard_no_silencing_directive
 step every-image-pinned guard_every_image_pinned
+step helm-images-pinned helm_images_pinned
 step shellcheck shellcheck_every_script
 step hadolint hadolint_every_recipe
 step terraform-validate terraform_validate

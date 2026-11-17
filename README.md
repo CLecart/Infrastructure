@@ -662,7 +662,7 @@ depuis lui. Chaque ligne nomme sa preuve.
 | Images (scan ECR à l'envoi) | 6 images scannées, aucune vulnérabilité signalée |
 | Configuration Terraform (Trivy `config`, bloquant HIGH et CRITICAL) | `iac-scan` réussi ; 4 exceptions motivées dans `repos/infra/.trivyignore.yaml` : trafic sortant des nœuds (AWS-0104), HTTP vers l'ALB interne joignable par le seul lien VPC (AWS-0054), API EKS publique limitée à deux plages (AWS-0040), pas de clé KMS dédiée (AWS-0039) |
 | Recettes Docker (hadolint), scripts (shellcheck) | porte locale réussie, aucune directive de silence |
-| Versions | images tirées par leur empreinte, outils et fournisseurs figés, Renovate chaque jour ouvré ; Docker figé sur le poste et le runner, à la version de la ligne Pile |
+| Versions | images tirées par leur empreinte, y compris les 14 que rendent les charts Helm (étape `helm-images-pinned`) ; outils et fournisseurs figés, Renovate chaque jour ouvré ; Docker figé sur le poste et le runner, à la version de la ligne Pile |
 
 **Risques résiduels**, assumés et nommés : une seule passerelle NAT ; les bases,
 RabbitMQ et billing-app à une copie ; une seule instance GitLab ; un réseau
@@ -687,6 +687,7 @@ Scripts/ci-gate.sh && git push
 |---|---|---|
 | `no-silencing-directive` | aucune directive qui fait taire un outil | — |
 | `every-image-pinned` | chaque image tirée par son empreinte | — |
+| `helm-images-pinned` | chaque image que rendent les charts Helm (`helm template`, versions de `deploy-platform.sh`), argument de l'opérateur compris | — |
 | `shellcheck` | chaque script shell | — |
 | `hadolint` | chaque recette Docker, images des bases comprises | `dockerfile-lint` |
 | `terraform-validate` | `fmt -check` et `validate` (staging, prod, bootstrap) | `validate` |
