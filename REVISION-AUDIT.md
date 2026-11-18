@@ -21,7 +21,7 @@ le dossier local `preuves/`.
 | Pipelines | `infra` n° 1 : 17 min 30 jusqu'à staging ; applications : 2 min 26 à 3 min 03 du push au déploiement en staging |
 | Tests | 102 tests unitaires (40, 39, 23) ; complexité cognitive de 15 au plus, tenue par `lint` ; scénario de bout en bout 16/16 par l'URL publique ; RBAC 118/118 ; protections 9/9 |
 | Scaling | HPA 2 → 5 réplicas en 30 à 45 s ; 3e nœud prêt 48 s après la demande, plafond de 3 tenu ; retour à 2 nœuds en 4 min 24 |
-| Coûts | outillage ≈ 0,23 $/h, staging ≈ 0,39 $/h, séance ≈ 0,62 $/h ; 0 $ entre deux séances ; 9,79 $ dépensés sur les projets précédents, 190,21 $ de crédits restants |
+| Coûts | outillage ≈ 0,23 $/h, staging ≈ 0,39 $/h, séance ≈ 0,62 $/h ; 0 $ entre deux séances ; facture réelle du 17 novembre : 3,02 $ pour trois séances, ≈ 1 $ chacune ; 9,79 $ dépensés sur les projets précédents ; 187,20 $ de crédits restants |
 | Sans coupure | 110/110 et 117/117 requêtes en HTTP 200 pendant un remplacement de pods ; 146/146 pendant la vidange d'un nœud |
 | Sécurité | images d'application passées par Trivy à chaque pipeline ; 6 images scannées par ECR sans vulnérabilité signalée (seconde séance) ; 4 exceptions Trivy motivées ; aucune clé AWS dans les pipelines (OIDC) ; pod privilégié refusé par Pod Security |
 
@@ -117,8 +117,9 @@ relu avant chaque apply. Le scénario de bout en bout passe par l'URL publique H
 Tarifs relevés dans l'API de prix d'AWS (Paris) : outillage ≈ 0,23 $/h, staging
 ≈ 0,39 $/h, soit ≈ 0,62 $/h pour une séance ; oubliés allumés, ≈ 15 $ par jour. Rien
 ne survit à une séance, socle compris : 0 $ entre deux séances. La facture le
-confirme : 9,79 $ dépensés sur les projets précédents, uniquement les jours de
-séance. Choix : une seule NAT, machines du plan gratuit, pas de clé KMS dédiée,
+confirme : 3,02 $ pour les trois séances de ce projet le 17 novembre, 0 $ le
+lendemain ; 9,79 $ sur les projets précédents, uniquement les jours de séance.
+Choix : une seule NAT, machines du plan gratuit, pas de clé KMS dédiée,
 journaux gardés un jour, plafonds d'autoscaling, pas de production, destruction en
 fin de séance contrôlée par l'inventaire des 17 régions ; budget de 10 $ avec
 alertes.

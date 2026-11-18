@@ -136,7 +136,7 @@ Une soutenance technique devant jury professionnel présentant un projet fil rou
 | 1 — Réseau & conteneurs | Documentation d'architecture réseau | ☑ | [section 7](#7-architecture-réseau) : local et staging mesurés le 17 novembre (`Scripts/compose-test.sh`, captures AWS et Kubernetes) |
 | 2 — Orchestration & cloud | Application orchestrée sur cluster Kubernetes | ☑ | [section 9](#9-orchestration-sur-kubernetes-eks) : 8 pods, HPA et autoscaler éprouvés (`Scripts/load-test.sh pods` et `nodes`) |
 | 2 — Orchestration & cloud | Déploiement sur AWS | ☑ | [section 8](#8-une-séance-sur-aws-de-la-création-à-la-destruction) : staging construit le 17 novembre ; `Scripts/test-api.sh staging` 16/16 par l'URL publique |
-| 2 — Orchestration & cloud | Analyse des coûts d'infrastructure | ◐ | [section 10](#10-coûts-de-linfrastructure) : tarifs relevés dans l'API de prix d'AWS ; facture réelle de la séance à lire dans Cost Explorer |
+| 2 — Orchestration & cloud | Analyse des coûts d'infrastructure | ☑ | [section 10](#10-coûts-de-linfrastructure) : tarifs relevés dans l'API de prix d'AWS ; facture réelle du 17 novembre, 3,02 $ pour trois séances (Cost Explorer, crédits exclus), recoupée par les crédits du plan gratuit |
 | 3 — CI/CD & IaC | Pipeline CI/CD complet fonctionnel | ☑ | [section 11](#11-cicd-et-infrastructure-par-terraform) : pipelines `infra` n° 1 et applications n° 3, 4, 5 ; `Scripts/protection-test.sh` 9/9 |
 | 3 — CI/CD & IaC | Infrastructure provisionnée via Terraform | ☑ | [sections 8 et 11](#8-une-séance-sur-aws-de-la-création-à-la-destruction) : socle 54 ressources, staging 88, plans relus avant l'apply, destruction complète |
 | 4 — Supervision & sécurité | Tableau de bord de supervision opérationnel | ☑ | [section 12](#12-supervision) : Grafana capturé pendant la montée en charge ; journaux dans CloudWatch |
@@ -574,13 +574,17 @@ jour, images ECR et états S3 de quelques Mo, requêtes d'API Gateway.
 
 | Situation | Coût |
 |---|---|
-| Une séance (environ 2 h : création, preuves, destruction) | ≈ 1 à 1,50 $, estimé d'après ces tarifs et les durées mesurées |
+| Une séance (environ 2 h : création, preuves, destruction) | ≈ 1 $ mesuré (3,02 $ pour les trois séances du 17 novembre) ; l'estimation d'après ces tarifs donnait 1 à 1,50 $ |
 | Entre deux séances | 0 $ : rien ne reste |
 | Staging et outillage oubliés allumés | ≈ 15 $ par jour (0,62 $ × 24 h) |
 | Facture réelle des projets précédents (Cost Explorer, crédits exclus) | 9,79 $ au total, sur les seuls 20, 21 et 22 octobre ; 0 $ tous les autres jours |
+| Facture réelle de ce projet (Cost Explorer, crédits exclus) | 3,02 $ le 17 novembre : EC2 1,56 $, autres frais EC2 (NAT, disques) 0,93 $, EKS 0,29 $, ALB 0,11 $, Cost Explorer 0,07 $, adresses IP publiques 0,06 $, le reste moins de 0,01 $ ; 0 $ le lendemain |
 
-[CIBLE] Le coût réel de la séance du 17 novembre se lit dans Cost Explorer le
-lendemain ; il remplacera ici l'estimation.
+Facture lue le 18 novembre dans Cost Explorer (chiffres qu'AWS marque « estimés »
+jusqu'à la clôture du mois), recoupée par les crédits du plan gratuit, passés de
+190,21 à 187,20 $. La lecture de la facture a elle-même un coût : 0,01 $ par
+requête de l'API Cost Explorer d'après la page de tarifs d'AWS, et la facture du
+17 novembre en porte 0,07 $ ; une requête par lecture suffit.
 
 **Choix qui tiennent le coût** : une seule passerelle NAT au lieu d'une par zone
 (0,055 $/h de moins, au prix d'une sortie qui dépend d'une zone) ; machines du
